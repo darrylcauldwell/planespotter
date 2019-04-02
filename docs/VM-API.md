@@ -38,22 +38,22 @@ sudo apt-get update && sudo apt-get upgrade -y
 sudo apt-get -y install python-pip python-dev nginx
 sudo pip install --upgrade pip
 sudo pip install virtualenv
-git clone https://github.com/darrylcauldwell/planeSpotters.git
-cd planeSpotters/
+git clone https://github.com/darrylcauldwell/planespotter.git
+cd planespotter/
 virtualenv api-server
 cd api-server/
 source bin/activate
 cd app
 pip install uwsgi Flask-Restless PyMySQL Flask-SQLAlchemy requests redis
 
-cat << EOF > ~/planeSpotters/api-server/app/wsgi.py
+cat << EOF > ~/planespotter/api-server/app/wsgi.py
 from main import app
 
 if __name__ == "__main__":
     app.run()
 EOF
 
-cat << EOF > ~/planeSpotters/api-server/app/app-server.ini
+cat << EOF > ~/planespotter/api-server/app/app-server.ini
 [uwsgi]
 module = wsgi:app
 master = true
@@ -65,7 +65,7 @@ die-on-term = true
 logto = /var/log/uwsgi/%n.log
 EOF
 
-cat << EOF > ~/planeSpotters/api-server/app/config/config.cfg
+cat << EOF > ~/planespotter/api-server/app/config/config.cfg
 DATABASE_URL = 'planespotter-mysql.darrylcauldwell.com'
 DATABASE_USER = 'planespotter'
 DATABASE_PWD = 'VMware1!'
@@ -90,9 +90,9 @@ After=network.target
 [Service]
 User=ubuntu
 Group=www-data
-WorkingDirectory=/home/ubuntu/planeSpotters/api-server/app
-Environment="PATH=/home/ubuntu/planeSpotters/api-server/bin"
-ExecStart=/home/ubuntu/planeSpotters/api-server/bin/uwsgi --ini app-server.ini
+WorkingDirectory=/home/ubuntu/planespotter/api-server/app
+Environment="PATH=/home/ubuntu/planespotter/api-server/bin"
+ExecStart=/home/ubuntu/planespotter/api-server/bin/uwsgi --ini app-server.ini
 Restart=always
 RestartSec=3
 
@@ -109,7 +109,7 @@ server {
     server_name default;
     location / {
         include uwsgi_params;
-        uwsgi_pass unix:/home/ubuntu/planeSpotters/api-server/app/app-server.sock;
+        uwsgi_pass unix:/home/ubuntu/planespotter/api-server/app/app-server.sock;
     }
 }
 EOF

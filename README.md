@@ -6,7 +6,7 @@ The frontend and RESTful api are both written using the Python Flash microframew
 
 ## Application Deployment
 
-The  application can be deployed in a variety of architectures, the most simple is to [deploy each component as a virtual machine](https://github.com/darrylcauldwell/planeSpotters/tree/master/docs/VM-ALL.md).
+The  application can be deployed in a variety of architectures, the most simple is to [deploy each component as a virtual machine](https://github.com/darrylcauldwell/planespotter/tree/master/docs/VM-ALL.md).
 
 ## Network Communications
 
@@ -27,7 +27,7 @@ Here's the Communication Matrix of the component amongst each other and to the e
 | ADSB-Sync       		 | www.airport-data.com          | TCP/32030 | Retr. Acft. Airbone stat. in stream |
 | ADSB-Sync       		 | Planespotter Redis            | TCP/6379  | 	
 
-<img src="https://github.com/darrylcauldwell/planeSpotters/blob/master/docs/pics/planespotter-comms.png">
+<img src="https://github.com/darrylcauldwell/planespotter/blob/master/docs/pics/planespotter-comms.png">
 
 ## Acknowledgments
 

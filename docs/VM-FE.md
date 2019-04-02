@@ -36,8 +36,8 @@ sudo apt-get update && sudo apt-get upgrade -y
 sudo apt-get -y install python-pip python-dev nginx
 sudo pip install --upgrade pip
 sudo pip install virtualenv
-git clone https://github.com/darrylcauldwell/planeSpotters.git
-cd planeSpotters/
+git clone https://github.com/darrylcauldwell/planespotter.git
+cd planespotter/
 virtualenv frontend
 cd frontend/
 source bin/activate
@@ -45,14 +45,14 @@ cd app
 pip install -r requirements.txt
 pip install uwsgi
 
-cat << EOF > /home/ubuntu/planeSpotters/frontend/app/wsgi.py
+cat << EOF > /home/ubuntu/planespotter/frontend/app/wsgi.py
 from main import app
 
 if __name__ == "__main__":
     app.run()
 EOF
 
-cat << EOF > /home/ubuntu/planeSpotters/frontend/app/frontend.ini
+cat << EOF > /home/ubuntu/planespotter/frontend/app/frontend.ini
 [uwsgi]
 module = wsgi:app
 master = true
@@ -82,9 +82,9 @@ After=network.target
 [Service]
 User=ubuntu
 Group=www-data
-WorkingDirectory=/home/ubuntu/planeSpotters/frontend/app
-Environment="PATH=/home/ubuntu/planeSpotters/frontend/bin;PLANESPOTTER_API_ENDPOINT=planespotter-api"
-ExecStart=/home/ubuntu/planeSpotters/frontend/bin/uwsgi --ini frontend.ini
+WorkingDirectory=/home/ubuntu/planespotter/frontend/app
+Environment="PATH=/home/ubuntu/planespotter/frontend/bin;PLANESPOTTER_API_ENDPOINT=planespotter-api"
+ExecStart=/home/ubuntu/planespotter/frontend/bin/uwsgi --ini frontend.ini
 Restart=always
 RestartSec=3
 
@@ -101,7 +101,7 @@ server {
     server_name default;
     location / {
         include uwsgi_params;
-        uwsgi_pass unix:/home/ubuntu/planeSpotters/frontend/app/frontend.sock;
+        uwsgi_pass unix:/home/ubuntu/planespotter/frontend/app/frontend.sock;
     }
 }
 EOF

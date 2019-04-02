@@ -36,10 +36,10 @@ sudo systemctl status mysql.service
 sudo sed -i "s/.*bind-address.*/bind-address = 0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
 sudo systemctl restart mysql.service
 sudo apt-get -y install unzip git
-git clone https://github.com/darrylcauldwell/planeSpotters.git
-chmod +x ~/planeSpotters/mysql/*.sh
+git clone https://github.com/darrylcauldwell/planespotter.git
+chmod +x ~/planespotter/mysql/*.sh
 export MYSQL_ROOT_PASSWORD=VMware1!
-~/planeSpotters/mysql/create-planespotter-db.sh
+~/planespotter/mysql/create-planespotter-db.sh
 ```
 
 # NSX-T Lab Networking Setup

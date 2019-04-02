@@ -31,14 +31,14 @@ sudo apt-get -y install python-pip python-dev
 sudo pip install --upgrade pip
 sudo pip install virtualenv
 cd /home/ubuntu
-git clone https://github.com/darrylcauldwell/planeSpotters.git
-cd planeSpotters/
+git clone https://github.com/darrylcauldwell/planespotter.git
+cd planespotter/
 virtualenv adsb-sync
 cd adsb-sync/
 source bin/activate
 pip install -r requirements.txt
 
-cat << EOF > /home/ubuntu/planeSpotters/adsb-sync/synchronizer/config/config.ini
+cat << EOF > /home/ubuntu/planespotter/adsb-sync/synchronizer/config/config.ini
 [main]
 redis_server = planespotter-redis.darrylcauldwell.com
 adsb_server_stream = pub-vrs.adsbexchange.com
@@ -60,9 +60,9 @@ After=network.target
 [Service]
 User=ubuntu
 Group=www-data
-WorkingDirectory=/home/ubuntu/planeSpotters/adsb-sync/synchronizer
-Environment="PATH=/home/ubuntu/planeSpotters/adsb-sync/bin"
-ExecStart=/home/ubuntu/planeSpotters/adsb-sync/bin/python -u adsb-sync.py
+WorkingDirectory=/home/ubuntu/planespotter/adsb-sync/synchronizer
+Environment="PATH=/home/ubuntu/planespotter/adsb-sync/bin"
+ExecStart=/home/ubuntu/planespotter/adsb-sync/bin/python -u adsb-sync.py
 Restart=always
 RestartSec=3
 

@@ -54,16 +54,3 @@ jobs:
             EOF
 
             cp -R ~/planespotter/frontend/app /app/
-      
-      - setup_remote_docker:
-          docker_layer_caching: true
-
-      - run: |
-          docker build -t dcauldwell/planespotter-frontend:latest .
-          docker commit -m "Circle CI created Planespotter frontend" -a "NAME" planespotter-frontend dcauldwell/planespotter-frontend:latest   
-          docker login -u $DOCKER_USER -p $DOCKER_PASS
-          docker push dcauldwell/planespotter-frontend:latest
-
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports

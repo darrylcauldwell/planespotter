@@ -23,7 +23,7 @@ jobs:
             cd planespotter/frontend/app
             pip install -r requirements.txt
 
-            cat << EOF > /etc/nginx/conf.d
+            cat << EOF > /etc/nginx/conf.d/uwsgi-streaming.conf
             uwsgi_buffering off;
             uwsgi_cache off;
 

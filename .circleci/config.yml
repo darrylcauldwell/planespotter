@@ -1,0 +1,58 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      - image: tiangolo/uwsgi-nginx-flask:flask
+
+    working_directory: ~/planespotter/frontend/app
+
+    steps:
+      - checkout
+
+      - run:
+          name: install dependencies and configure application
+          command: |
+            pip install flask-paginate
+            pip install requests
+            pip install -r requirements.txt
+            pip install netifaces
+
+            cat << EOF > /etc/nginx/conf.d/
+            uwsgi_buffering off;
+            uwsgi_cache off;
+
+            EOF
+
+            cat << EOF > /etc/uwsgi/uwsgi.ini
+            [uwsgi]
+            socket = /tmp/uwsgi.sock
+            chown-socket = nginx:nginx
+            chmod-socket = 664
+            cheaper = 2
+            processes = 16
+            enable-threads = true
+
+            EOF
+
+            cat << EOF > ~/planespotter/frontend/app/frontend.ini
+            [uwsgi]
+            module = wsgi:app
+            master = true
+            processes = 5
+            socket = frontend.sock
+            chmod-socket = 660
+            vacuum = true
+            die-on-term = true
+            logto = /var/log/uwsgi/%n.log
+            env = PLANESPOTTER_API_ENDPOINT=planespotter-api.darrylcauldwell.com
+            EOF
+
+            COPY ./app /app
+
+      - store_artifacts:
+          path: test-reports
+          destination: test-reports

@@ -18,8 +18,10 @@ jobs:
           command: |
             pip install flask-paginate
             pip install requests
-            pip install -r requirements.txt
             pip install netifaces
+            git clone https://github.com/darrylcauldwell/planespotter.git
+            cd planespotter/frontend/app
+            pip install -r requirements.txt
 
             cat << EOF > /etc/nginx/conf.d/
             uwsgi_buffering off;

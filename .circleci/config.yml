@@ -53,7 +53,7 @@ jobs:
             env = PLANESPOTTER_API_ENDPOINT=planespotter-api.darrylcauldwell.com
             EOF
 
-            cp -R ./app /app/
+            cp -R ~/planespotter/frontend/app /app/
 
       - store_artifacts:
           path: test-reports

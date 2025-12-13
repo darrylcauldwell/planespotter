@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Planespotter - Search Aircraft{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <i class="bi bi-search fs-3 me-3" style="color: var(--ps-sky);"></i>
+    <div>
+        <h2 class="mb-0">Search Aircraft</h2>
+        <p class="text-muted mb-0">Search the OpenSky Network aircraft database</p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-funnel me-2"></i>Search Filters
+    </div>
+    <div class="card-body">
+        <form method="get" action="/search">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="registration" class="form-label">
+                        <i class="bi bi-card-text me-1"></i>Registration
+                    </label>
+                    <input type="text" class="form-control" id="registration" name="registration"
+                           value="{{ registration }}" placeholder="e.g., N12345, G-ABCD">
+                </div>
+                <div class="col-md-4">
+                    <label for="icao24" class="form-label">
+                        <i class="bi bi-hash me-1"></i>ICAO24 Address
+                    </label>
+                    <input type="text" class="form-control" id="icao24" name="icao24"
+                           value="{{ icao24 }}" placeholder="e.g., a0b1c2">
+                </div>
+                <div class="col-md-4">
+                    <label for="manufacturer" class="form-label">
+                        <i class="bi bi-building me-1"></i>Manufacturer
+                    </label>
+                    <input type="text" class="form-control" id="manufacturer" name="manufacturer"
+                           value="{{ manufacturer }}" placeholder="e.g., Boeing, Airbus">
+                </div>
+                <div class="col-md-4">
+                    <label for="model" class="form-label">
+                        <i class="bi bi-airplane me-1"></i>Model
+                    </label>
+                    <input type="text" class="form-control" id="model" name="model"
+                           value="{{ model }}" placeholder="e.g., 737, A320">
+                </div>
+                <div class="col-md-4">
+                    <label for="operator" class="form-label">
+                        <i class="bi bi-briefcase me-1"></i>Operator
+                    </label>
+                    <input type="text" class="form-control" id="operator" name="operator"
+                           value="{{ operator }}" placeholder="e.g., United, Lufthansa">
+                </div>
+                <div class="col-md-4">
+                    <label for="owner" class="form-label">
+                        <i class="bi bi-person me-1"></i>Owner
+                    </label>
+                    <input type="text" class="form-control" id="owner" name="owner"
+                           value="{{ owner }}" placeholder="e.g., Airlines Inc">
+                </div>
+                <div class="col-md-4">
+                    <label for="status" class="form-label">
+                        <i class="bi bi-broadcast me-1"></i>Flight Status
+                    </label>
+                    <select class="form-control" id="status" name="status">
+                        <option value="" {% if not status %}selected{% endif %}>All Aircraft</option>
+                        <option value="airborne" {% if status == 'airborne' %}selected{% endif %}>Airborne Only</option>
+                        <option value="ground" {% if status == 'ground' %}selected{% endif %}>On Ground Only</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-2"></i>Search
+                </button>
+                <a href="/search" class="btn btn-outline-secondary ms-2">
+                    <i class="bi bi-x-circle me-2"></i>Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert alert-danger d-flex align-items-center">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ error }}
+</div>
+{% endif %}
+
+{% if results %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+            <i class="bi bi-list-ul me-2"></i>
+            <strong>{{ results['total'] }}</strong> aircraft found
+        </span>
+        <span class="badge bg-secondary">
+            Page {{ results['page'] }} of {{ results['pages'] }}
+        </span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th><i class="bi bi-broadcast me-1"></i>Status</th>
+                    <th><i class="bi bi-card-text me-1"></i>Registration</th>
+                    <th><i class="bi bi-hash me-1"></i>ICAO24</th>
+                    <th><i class="bi bi-building me-1"></i>Manufacturer</th>
+                    <th><i class="bi bi-airplane me-1"></i>Model</th>
+                    <th><i class="bi bi-briefcase me-1"></i>Operator</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aircraft in results['items'] %}
+                <tr onclick="window.location='/aircraft/{{ aircraft['icao24'] }}'" style="cursor: pointer;">
+                    <td>
+                        {% if aircraft['is_airborne'] %}
+                        <span class="badge bg-success">
+                            <span class="pulse me-1" style="display: inline-block; width: 6px; height: 6px;"></span>
+                            Airborne
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary">Ground</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ aircraft['registration'] or '-' }}</strong>
+                    </td>
+                    <td><code>{{ aircraft['icao24'] }}</code></td>
+                    <td>{{ aircraft['manufacturername'] or '-' }}</td>
+                    <td>{{ aircraft['model'] or '-' }}</td>
+                    <td>{{ aircraft['operator'] or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if results['pages'] > 1 %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination mb-0 justify-content-center">
+                {% if page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="?registration={{ registration }}&icao24={{ icao24 }}&manufacturer={{ manufacturer }}&model={{ model }}&operator={{ operator }}&owner={{ owner }}&status={{ status }}&page={{ page - 1 }}">
+                        <i class="bi bi-chevron-left me-1"></i>Previous
+                    </a>
+                </li>
+                {% endif %}
+
+                <li class="page-item disabled">
+                    <span class="page-link">{{ page }} / {{ results['pages'] }}</span>
+                </li>
+
+                {% if page < results['pages'] %}
+                <li class="page-item">
+                    <a class="page-link" href="?registration={{ registration }}&icao24={{ icao24 }}&manufacturer={{ manufacturer }}&model={{ model }}&operator={{ operator }}&owner={{ owner }}&status={{ status }}&page={{ page + 1 }}">
+                        Next<i class="bi bi-chevron-right ms-1"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% elif not error and (registration or icao24 or manufacturer or model or operator or owner or status) %}
+<div class="alert alert-info d-flex align-items-center">
+    <i class="bi bi-info-circle me-2"></i>
+    No aircraft found matching your search criteria.
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-airplane fs-1 mb-3" style="color: var(--ps-sky);"></i>
+        <h5>Start Your Search</h5>
+        <p class="text-muted">Use the filters above to search for aircraft in the database.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

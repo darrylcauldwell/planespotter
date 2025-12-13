@@ -1,7 +1,18 @@
-FROM python:2
-WORKDIR /usr/src/app
+FROM python:3.11-slim
+
+LABEL org.opencontainers.image.source="https://github.com/darrylcauldwell/planespotter"
+LABEL org.opencontainers.image.title="planespotter-adsb-sync"
+LABEL org.opencontainers.image.description="Planespotter ADSB-Sync - OpenSky Network position synchronizer"
+LABEL org.opencontainers.image.licenses="MIT"
+
+WORKDIR /app
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY synchronizer/adsb-sync.py .
 
-CMD [ "python", "-u" , "./adsb-sync.py" ]
+COPY app/ ./app/
+
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+CMD ["python", "-m", "app.main"]

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: planespotter
+data:
+  API_SERVER_URL: http://api-server:8000
+  LOG_LEVEL: INFO

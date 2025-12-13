@@ -1,0 +1,824 @@
+/* Planespotter - Clarity Design System Theme with Auto Light/Dark Mode */
+
+/* Light theme (default) */
+:root {
+    --ps-bg: #f4f6f8;
+    --ps-bg-card: #ffffff;
+    --ps-bg-header: linear-gradient(135deg, #e8eef2 0%, #f4f6f8 100%);
+    --ps-bg-input: #ffffff;
+    --ps-bg-input-focus: #ffffff;
+    --ps-border: rgba(0, 0, 0, 0.15);
+    --ps-border-card: rgba(0, 0, 0, 0.1);
+    --ps-sky: #0072a3;
+    --ps-sky-light: rgba(0, 114, 163, 0.1);
+    --ps-green: #3c8c3c;
+    --ps-amber: #c98600;
+    --ps-red: #c92100;
+    --ps-text: #313131;
+    --ps-text-muted: #666666;
+    --ps-text-inverse: #ffffff;
+    --ps-table-header: rgba(0, 114, 163, 0.08);
+    --ps-table-hover: rgba(0, 114, 163, 0.06);
+    --ps-table-border: rgba(0, 0, 0, 0.08);
+    --ps-code-bg: rgba(0, 114, 163, 0.08);
+    --ps-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --ps-footer-bg: #e8eef2;
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ps-bg: #1b2a32;
+        --ps-bg-card: #22343d;
+        --ps-bg-header: linear-gradient(135deg, #0f171c 0%, #1b2a32 100%);
+        --ps-bg-input: rgba(0, 0, 0, 0.3);
+        --ps-bg-input-focus: rgba(0, 0, 0, 0.4);
+        --ps-border: rgba(73, 175, 217, 0.3);
+        --ps-border-card: rgba(73, 175, 217, 0.2);
+        --ps-sky: #49afd9;
+        --ps-sky-light: rgba(73, 175, 217, 0.1);
+        --ps-green: #62d862;
+        --ps-amber: #fac400;
+        --ps-red: #f54f47;
+        --ps-text: #e8e8e8;
+        --ps-text-muted: #adbbc4;
+        --ps-text-inverse: #000000;
+        --ps-table-header: rgba(73, 175, 217, 0.15);
+        --ps-table-hover: rgba(73, 175, 217, 0.15);
+        --ps-table-border: rgba(255, 255, 255, 0.1);
+        --ps-code-bg: rgba(73, 175, 217, 0.15);
+        --ps-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        --ps-footer-bg: #0f171c;
+    }
+}
+
+/* Global styles */
+body {
+    background-color: var(--ps-bg);
+    color: var(--ps-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Clarity City', 'Avenir Next', 'Helvetica Neue', Arial, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Header customization */
+.header {
+    background: var(--ps-bg-header);
+    border-bottom: 1px solid var(--ps-border);
+}
+
+.header .branding {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.header .branding .title {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--ps-sky);
+}
+
+.header .branding cds-icon {
+    color: var(--ps-sky);
+}
+
+.header-nav {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.header .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0 1rem;
+    color: var(--ps-text);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.header .nav-link:hover {
+    color: var(--ps-sky);
+}
+
+.header .nav-link cds-icon {
+    --color: currentColor;
+}
+
+/* Content area */
+.content-container {
+    flex: 1;
+    padding: 1.5rem 0;
+    width: 100%;
+}
+
+.content-area {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+/* Bootstrap container override for full width */
+.container {
+    max-width: 1400px;
+}
+
+.container-fluid {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+/* Cards - Clarity style with better contrast */
+.card {
+    background: var(--ps-bg-card);
+    border: 1px solid var(--ps-border-card);
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--ps-shadow);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.card-header {
+    background: var(--ps-sky-light);
+    border-bottom: 1px solid var(--ps-border-card);
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    color: var(--ps-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-body {
+    padding: 1.25rem;
+    color: var(--ps-text);
+}
+
+.card-footer {
+    background: var(--ps-sky-light);
+    border-top: 1px solid var(--ps-border-card);
+    padding: 0.75rem 1rem;
+}
+
+/* Tables with good contrast */
+.table {
+    color: var(--ps-text);
+    background: var(--ps-bg-card) !important;
+    --bs-table-bg: var(--ps-bg-card);
+    --bs-table-striped-bg: var(--ps-sky-light);
+    --bs-table-hover-bg: var(--ps-table-hover);
+    --bs-table-color: var(--ps-text);
+}
+
+.table thead {
+    background: var(--ps-table-header) !important;
+}
+
+.table th {
+    color: var(--ps-text) !important;
+    background: var(--ps-table-header) !important;
+    font-weight: 500;
+    border-bottom: 2px solid var(--ps-border);
+    padding: 0.75rem 1rem;
+}
+
+.table td {
+    color: var(--ps-text) !important;
+    background: transparent !important;
+    border-bottom: 1px solid var(--ps-table-border);
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+.table tbody tr {
+    background: transparent !important;
+}
+
+.table tbody tr:hover {
+    background: var(--ps-table-hover) !important;
+}
+
+.table-light,
+.table-light th,
+.table-light td {
+    background: var(--ps-table-header) !important;
+    color: var(--ps-text) !important;
+}
+
+.table-responsive {
+    background: var(--ps-bg-card);
+}
+
+/* Forms - Clarity style */
+.form-control {
+    background: var(--ps-bg-input);
+    border: 1px solid var(--ps-border);
+    color: var(--ps-text);
+    border-radius: 3px;
+    padding: 0.5rem 0.75rem;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.form-control:focus {
+    background: var(--ps-bg-input-focus);
+    border-color: var(--ps-sky);
+    color: var(--ps-text);
+    box-shadow: 0 0 0 2px rgba(0, 114, 163, 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+    .form-control:focus {
+        box-shadow: 0 0 0 2px rgba(73, 175, 217, 0.25);
+    }
+}
+
+.form-control::placeholder {
+    color: var(--ps-text-muted);
+}
+
+.form-label {
+    color: var(--ps-text);
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Buttons - Clarity style */
+.btn {
+    border-radius: 3px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: var(--ps-sky);
+    border-color: var(--ps-sky);
+    color: var(--ps-text-inverse);
+}
+
+.btn-primary:hover {
+    background: var(--ps-sky);
+    border-color: var(--ps-sky);
+    color: var(--ps-text-inverse);
+    filter: brightness(0.9);
+}
+
+.btn-outline-primary {
+    background: transparent;
+    border-color: var(--ps-sky);
+    color: var(--ps-sky);
+}
+
+.btn-outline-primary:hover {
+    background: var(--ps-sky);
+    color: var(--ps-text-inverse);
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    border-color: var(--ps-text-muted);
+    color: var(--ps-text-muted);
+}
+
+.btn-outline-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--ps-text);
+    color: var(--ps-text);
+}
+
+/* Badges - Clarity style */
+.badge {
+    font-weight: 500;
+    padding: 0.3rem 0.6rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+}
+
+.badge.bg-success, .bg-success {
+    background: var(--ps-green) !important;
+    color: var(--ps-text-inverse) !important;
+}
+
+.badge.bg-danger, .bg-danger {
+    background: var(--ps-red) !important;
+    color: #fff !important;
+}
+
+.badge.bg-warning, .bg-warning {
+    background: var(--ps-amber) !important;
+    color: var(--ps-text-inverse) !important;
+}
+
+.badge.bg-secondary, .bg-secondary {
+    background: var(--ps-sky-light) !important;
+    color: var(--ps-text-muted) !important;
+    border: 1px solid var(--ps-border);
+}
+
+.badge.bg-info {
+    background: var(--ps-sky) !important;
+    color: var(--ps-text-inverse) !important;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 4px;
+    border: none;
+    padding: 1rem;
+}
+
+.alert-danger {
+    background: rgba(245, 79, 71, 0.2);
+    color: #ff8a84;
+    border-left: 4px solid var(--ps-red);
+}
+
+.alert-info {
+    background: rgba(73, 175, 217, 0.2);
+    color: var(--ps-sky);
+    border-left: 4px solid var(--ps-sky);
+}
+
+.alert-warning {
+    background: rgba(250, 196, 0, 0.2);
+    color: var(--ps-amber);
+    border-left: 4px solid var(--ps-amber);
+}
+
+/* Info Grid for details page - HIGH CONTRAST */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    padding: 0.75rem;
+    background: var(--ps-sky-light);
+    border-radius: 4px;
+    border-left: 3px solid var(--ps-sky);
+}
+
+.info-item label {
+    display: block;
+    color: var(--ps-sky);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.info-item span {
+    color: var(--ps-text);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* Status Cards */
+.status-card {
+    background: var(--ps-bg-card);
+    border-radius: 4px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid var(--ps-border-card);
+    transition: all 0.2s;
+}
+
+.status-card .icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.status-card.healthy {
+    border-color: var(--ps-green);
+    background: linear-gradient(135deg, rgba(98, 216, 98, 0.1) 0%, transparent 100%);
+}
+
+.status-card.healthy .icon {
+    color: var(--ps-green);
+}
+
+.status-card.degraded {
+    border-color: var(--ps-amber);
+    background: linear-gradient(135deg, rgba(250, 196, 0, 0.1) 0%, transparent 100%);
+}
+
+.status-card.degraded .icon {
+    color: var(--ps-amber);
+}
+
+.status-card.unhealthy {
+    border-color: var(--ps-red);
+    background: linear-gradient(135deg, rgba(245, 79, 71, 0.1) 0%, transparent 100%);
+}
+
+.status-card.unhealthy .icon {
+    color: var(--ps-red);
+}
+
+.status-card h5 {
+    color: var(--ps-text);
+    margin-bottom: 0.5rem;
+}
+
+.status-card .latency {
+    color: var(--ps-text);
+    font-size: 0.9rem;
+}
+
+/* Aircraft icon */
+.aircraft-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--ps-bg);
+    border: 2px solid var(--ps-sky);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ps-sky);
+    transition: all 0.3s;
+}
+
+.aircraft-icon.airborne {
+    border-color: var(--ps-green);
+    color: var(--ps-green);
+    box-shadow: 0 0 20px rgba(98, 216, 98, 0.4);
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(98, 216, 98, 0.4); }
+    50% { box-shadow: 0 0 30px rgba(98, 216, 98, 0.6); }
+}
+
+/* Airborne badge */
+.airborne-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(98, 216, 98, 0.2);
+    color: var(--ps-green);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Pulse animation */
+.pulse {
+    width: 8px;
+    height: 8px;
+    background: var(--ps-green);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+/* Map link */
+.map-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--ps-sky);
+    color: var(--ps-text-inverse);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.map-link:hover {
+    background: var(--ps-sky);
+    color: var(--ps-text-inverse);
+    filter: brightness(0.9);
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+
+.breadcrumb-item a {
+    color: var(--ps-sky);
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+    color: var(--ps-text-muted);
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    color: var(--ps-text-muted);
+}
+
+/* Code styling */
+code {
+    background: var(--ps-code-bg);
+    color: var(--ps-sky);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+/* Text utilities */
+.text-muted {
+    color: var(--ps-text-muted) !important;
+}
+
+.text-success {
+    color: var(--ps-green) !important;
+}
+
+.text-danger {
+    color: var(--ps-red) !important;
+}
+
+.text-warning {
+    color: var(--ps-amber) !important;
+}
+
+/* Footer */
+.app-footer {
+    background: var(--ps-footer-bg);
+    border-top: 1px solid var(--ps-border-card);
+    padding: 1rem;
+    margin-top: auto;
+}
+
+.footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--ps-text-muted);
+    font-size: 0.9rem;
+}
+
+.footer-content cds-icon {
+    color: var(--ps-sky);
+}
+
+/* Pagination */
+.pagination {
+    gap: 0.25rem;
+}
+
+.page-link {
+    background: var(--ps-bg-card);
+    border-color: var(--ps-border);
+    color: var(--ps-text);
+}
+
+.page-link:hover {
+    background: var(--ps-sky-light);
+    border-color: var(--ps-sky);
+    color: var(--ps-sky);
+}
+
+.page-item.disabled .page-link {
+    background: var(--ps-sky-light);
+    border-color: var(--ps-border);
+    color: var(--ps-text-muted);
+}
+
+/* Network Diagram */
+.network-diagram {
+    background: var(--ps-bg);
+    border-radius: 4px;
+    padding: 1rem;
+}
+
+.connection-line {
+    transition: stroke 0.3s ease;
+}
+
+.connection-line.blocked {
+    stroke-dasharray: 10, 5;
+    animation: dash 1s linear infinite;
+}
+
+@keyframes dash {
+    to { stroke-dashoffset: -15; }
+}
+
+/* Architecture diagram */
+.architecture pre {
+    background: var(--ps-bg);
+    color: var(--ps-text);
+    padding: 1.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    overflow-x: auto;
+}
+
+/* Row and grid helpers */
+.row {
+    --bs-gutter-x: 1.5rem;
+}
+
+/* Hero section for home page */
+.hero-section {
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.hero-section h1 {
+    color: var(--ps-text);
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.hero-section .lead {
+    color: var(--ps-text-muted);
+    font-size: 1.2rem;
+}
+
+/* Feature cards */
+.feature-card {
+    text-align: center;
+    padding: 2rem 1.5rem;
+}
+
+.feature-card cds-icon,
+.feature-card .icon {
+    font-size: 3rem;
+    color: var(--ps-sky);
+    margin-bottom: 1rem;
+}
+
+.feature-card h5 {
+    color: var(--ps-text);
+    margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+    color: var(--ps-text-muted);
+    margin-bottom: 0;
+}
+
+/* Hero with radar animation */
+.hero {
+    background: var(--ps-bg-card);
+    border: 1px solid var(--ps-border-card);
+    border-radius: 4px;
+    padding: 3rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.hero h1 {
+    color: var(--ps-text);
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+}
+
+.hero .lead {
+    color: var(--ps-text-muted);
+    font-size: 1.1rem;
+}
+
+/* Radar Animation */
+.radar-container {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 1.5rem;
+}
+
+.radar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle, transparent 30%, var(--ps-sky-light) 70%),
+        conic-gradient(from 0deg, transparent 0deg, var(--ps-sky-light) 30deg, transparent 60deg);
+    animation: radar-sweep 4s linear infinite;
+    position: relative;
+}
+
+.radar::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background: var(--ps-sky);
+    border-radius: 50%;
+    box-shadow: 0 0 15px var(--ps-sky);
+}
+
+.radar-ring {
+    position: absolute;
+    border: 1px solid var(--ps-border);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.radar-ring:nth-child(1) { width: 33%; height: 33%; }
+.radar-ring:nth-child(2) { width: 66%; height: 66%; }
+.radar-ring:nth-child(3) { width: 100%; height: 100%; }
+
+@keyframes radar-sweep {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--ps-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--ps-border);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--ps-sky);
+}
+
+/* Leaflet map customization */
+#aircraft-map {
+    border: 1px solid var(--ps-border);
+}
+
+.aircraft-marker {
+    background: transparent !important;
+    border: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+    background: var(--ps-bg-card);
+    color: var(--ps-text);
+    border-radius: 4px;
+}
+
+.leaflet-popup-tip {
+    background: var(--ps-bg-card);
+}
+
+.leaflet-popup-content {
+    margin: 0.75rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .content-container {
+        padding: 1rem;
+    }
+
+    .hero {
+        padding: 2rem 1rem;
+    }
+
+    .hero h1 {
+        font-size: 1.5rem;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .radar-container {
+        width: 120px;
+        height: 120px;
+    }
+
+    .header-nav {
+        flex-wrap: wrap;
+    }
+}

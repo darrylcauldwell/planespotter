@@ -1,0 +1,69 @@
+services:
+  postgres:
+    build: ./db-install
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-server:
+    build: ./api-server
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: postgres
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_HOST: valkey
+      REDIS_PORT: 6379
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:8080"
+    environment:
+      API_SERVER_URL: http://api-server:8000
+      LOG_LEVEL: INFO
+    depends_on:
+      - api-server
+
+  adsb-sync:
+    build: ./adsb-sync
+    environment:
+      REDIS_HOST: valkey
+      REDIS_PORT: 6379
+      POLL_INTERVAL: 1800      # 30 minutes - avoids OpenSky rate limits
+      REDIS_TTL: 2100          # 35 minutes - outlasts poll interval
+      MAX_BACKOFF: 1800        # Cap backoff at 30 minutes
+      LOG_LEVEL: INFO
+    depends_on:
+      valkey:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

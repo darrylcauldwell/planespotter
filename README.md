@@ -1,71 +1,166 @@
-__NOTE__: This Application is not functioning correctly anymore as it is right now. It was developed as a nice Demo showing the capabilities of VMware's NSX Product for Network Virtualization. By now, the backend API service moved to a paid or contribute model (https://www.adsbexchange.com/data/#). You are free to use this web service, but you will have to get an API key to access the data before this app starts to function correctly.
+# Planespotter
 
-Planespotter App
-================
-Welcome to the home of the Planespotter Cloud Native Demo App.
+A microservices demo application for tracking aircraft using real-time ADS-B data from OpenSky Network.
 
-I developed this App to demonstrate various networking capabilities of VMware NSX in vSphere, Kubernetes and Cloud Foundry environments. If you are curious to see what a VMware NSX Demo with Planespotter looks like, you can watch this Presentation at Network Field Day 17:
+## Architecture
 
-[![NFD17 Planespotter Demo](https://github.com/yfauser/planespotter/blob/master/docs/pics/NFD-Screenshot.png)](https://youtu.be/SN4eJk3C7uc "NFD17 Planespotter Demo")
+```
+Browser → Frontend (8080) → API Server (8000) → PostgreSQL (5432)
+                                             → Valkey (6379) ← ADSB-Sync → OpenSky API
+```
 
-Planespotter is composed of a MySQL DB that holds Aircraft registration data from the FAA. You can search through the data in the DB through an API App Server written in Python using Flask. The API App Server is also retrieving data from a Redis in memory cache that contains data from aircrafts that are currently airborne. There's a service written in Python that retrieves the Data about airborne aircrafts and pushes that data into Redis. Finally there is a Frontend written with Python Flask and using Bootstrap.
+### Services
 
-There's no specific mandatory way to deploy Planespotter. It can be deployed in various ways ranging from all in VMs, to Kubernetes, Cloud Foundry, etc.
+| Service | Technology | Description |
+|---------|------------|-------------|
+| **Frontend** | FastAPI + Jinja2 + Bootstrap 5 | Web interface for searching and viewing aircraft |
+| **API Server** | FastAPI + SQLAlchemy 2.0 | REST API for aircraft data |
+| **ADSB-Sync** | Python asyncio + httpx | Polls OpenSky Network for live positions |
+| **Database** | PostgreSQL 15 | Aircraft metadata from OpenSky dataset |
+| **Cache** | Valkey 8 | Real-time aircraft position cache |
 
-Deployment Instructions:
-========================
-If you are planing to deploy the application using a VM only approach, follow the [VM based deployment instructions](https://github.com/yfauser/planespotter/tree/master/docs/vm_deployment/README.md).
+## Quick Start
 
-If you want to have a deployment where everything including the MySQL DB is deployed in Kubernetes, you can follow the [full deployment in Kubernetes instructions](https://github.com/yfauser/planespotter/tree/master/docs/all_k8s_deployment/README.md).
+### Prerequisites
 
-Another option is to still deploy the MySQL DB using a VM based model, but keep everything else in Kubernetes. Follow the [VM and Kubernetes Deployment instructions](https://github.com/yfauser/planespotter/tree/master/docs/vm_k8s_deployment/README.md) for this.
+- Docker and Docker Compose
+- (Optional) Kubernetes cluster with kubectl
 
-If you want to mix VMs, Kubernetes and Cloud Foundry, follow the [VM, K8s, CF deployment instructions](https://github.com/yfauser/planespotter/tree/master/docs/vm_k8s_cf_deployment/README.md).
+### Local Development with Docker Compose
 
-Communication Matrix:
-=====================
-One of the goals of the Planespotter app is to demonstrate micro-segmentation policies in Kubernetes, Cloud Foundry, vSphere with NSX, etc. Therefore the App is build with this in mind and uses quick timeouts to show the impact of firewall rule changes and includes a 'healtcheck' function that reports back communication issues between the 'microservices' of the app.
+```bash
+# Build and start all services
+docker-compose up --build
 
-Here's the Communication Matrix of the component amongst each other and to the external world:
+# Access the application
+# Frontend: http://localhost:8080
+# API Docs: http://localhost:8000/docs
+```
 
-| Component / Source     | Component / Destination       | Dest Port | Notes                               |
-|:-----------------------|:------------------------------|:----------|:------------------------------------|
-| Ext. Clients / Browser | Planespotter Frontend         | TCP/80    |                                     |
-| Ext. Clients / Browser | www.airport-data.com          | TCP/80    | Display Aircraft Thumbnail picture  |
-| Planespotter Frontend  | Planespotter API/APP          | TCP/80    | The listening port is configurable  |
-| Planespotter API/APP   | Planespotter MySQL	         | TCP/3306  | 									   |
-| Planespotter API/APP   | Planespotter Redis	         | TCP/6379  | 									   |
-| Planespotter API/APP   | www.airport-data.com          | TCP/80    | Find Aircraft Thumbnail pictures    |
-| Planespotter API/APP   | public-api.adsbexchange.com   | TCP/443   | Retrieves latest Aircraft position  |
-| ADSB-Sync       		 | www.airport-data.com          | TCP/443   | Retr. Acft. Airbone stat. in poll   |
-| ADSB-Sync       		 | www.airport-data.com          | TCP/32030 | Retr. Acft. Airbone stat. in stream |
-| ADSB-Sync       		 | Planespotter Redis            | TCP/6379  | 									   |
+### Kubernetes Deployment
 
+```bash
+# Build container images
+docker build -t planespotter-db:latest ./db-install
+docker build -t planespotter-api:latest ./api-server
+docker build -t planespotter-frontend:latest ./frontend
+docker build -t planespotter-adsb-sync:latest ./adsb-sync
 
-Contributing & Feedback:
-========================
-I welcome any contributions through pull requests, direct communication, etc.
-If you run into issues and need help, please open Github issues so that I can track this better and for other people to learn about open issues and potential workarounds.
+# Deploy with Kustomize
+kubectl apply -k kubernetes/
 
-License:
-========
-Copyright © 2018 Yves Fauser. All Rights Reserved.
+# Check deployment status
+kubectl get pods -n planespotter
+```
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the Software without restriction, including without limitation
-the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+## Features
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions
-of the Software.
+- **Aircraft Search**: Search by registration, ICAO24, manufacturer, model, operator, or owner
+- **Live Position Tracking**: View real-time position data for airborne aircraft
+- **Health Dashboard**: Monitor the status of all microservices
+- **Auto-generated API Docs**: Interactive Swagger UI at `/docs`
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
-CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-IN THE SOFTWARE.
+## API Endpoints
 
-Acknowledgments
-===============
-I integrated a couple of ideas on how to deploy the App from https://github.com/nvpnathan, https://github.com/puckpuck and https://github.com/howardyoo. Thanks!
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/aircraft` | Search aircraft with pagination |
+| GET | `/api/v1/aircraft/{icao24}` | Get aircraft details with live position |
+| GET | `/health` | Liveness probe |
+| GET | `/health/ready` | Readiness probe |
+| GET | `/api/v1/health` | Detailed health status |
 
+## Configuration
+
+### Environment Variables
+
+**API Server:**
+| Variable | Default | Description |
+|----------|---------|-------------|
+| DATABASE_HOST | localhost | PostgreSQL host |
+| DATABASE_PORT | 5432 | PostgreSQL port |
+| DATABASE_NAME | postgres | Database name |
+| DATABASE_USER | postgres | Database user |
+| DATABASE_PASSWORD | postgres | Database password |
+| REDIS_HOST | localhost | Redis host |
+| REDIS_PORT | 6379 | Redis port |
+
+**Frontend:**
+| Variable | Default | Description |
+|----------|---------|-------------|
+| API_SERVER_URL | http://localhost:8000 | API server URL |
+
+**ADSB-Sync:**
+| Variable | Default | Description |
+|----------|---------|-------------|
+| REDIS_HOST | localhost | Redis host |
+| REDIS_PORT | 6379 | Redis port |
+| POLL_INTERVAL | 30 | Seconds between OpenSky polls |
+| REDIS_TTL | 60 | Position data TTL in seconds |
+
+## Data Source
+
+Aircraft metadata is sourced from [OpenSky Network](https://opensky-network.org/):
+- Dataset: [Aircraft Database CSV](https://opensky-network.org/datasets/metadata/)
+- Live positions: [OpenSky Network API](https://opensky-network.org/apidoc/)
+
+The application uses anonymous API access which has rate limits. For production use, consider registering for an OpenSky account.
+
+## Project Structure
+
+```
+planespotter/
+├── .github/workflows/   # GitHub Actions CI/CD
+├── api-server/          # FastAPI REST API
+│   └── tests/           # pytest test suite
+├── frontend/            # FastAPI + Jinja2 web UI
+│   └── tests/           # pytest test suite
+├── adsb-sync/           # OpenSky → Redis sync service
+├── db-install/          # PostgreSQL with data import
+├── kubernetes/          # Kubernetes Kustomize manifests
+├── docs/                # Architecture documentation
+├── docker-compose.yaml  # Local development setup
+└── README.md
+```
+
+## Testing
+
+```bash
+# Run API server tests
+cd api-server
+pip install -r requirements-test.txt
+pytest -v --cov=app
+
+# Run frontend tests
+cd frontend
+pip install -r requirements-test.txt
+pytest -v --cov=app
+```
+
+## CI/CD
+
+The project uses GitHub Actions for continuous integration:
+- **Tests**: Run on every push and pull request
+- **Build**: Container images built and pushed to GitHub Container Registry
+- **Registry**: `ghcr.io/<owner>/planespotter/<service>`
+
+## Communication Matrix
+
+| Source | Destination | Port | Purpose |
+|--------|-------------|------|---------|
+| Browser | Frontend | TCP/8080 | Web interface |
+| Frontend | API Server | TCP/8000 | REST API calls |
+| API Server | PostgreSQL | TCP/5432 | Aircraft metadata |
+| API Server | Valkey | TCP/6379 | Live positions |
+| ADSB-Sync | Valkey | TCP/6379 | Cache updates |
+| ADSB-Sync | OpenSky API | TCP/443 | Fetch positions |
+
+## License
+
+Copyright 2018 Yves Fauser. All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

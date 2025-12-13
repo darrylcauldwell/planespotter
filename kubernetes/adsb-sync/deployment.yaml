@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adsb-sync
+  namespace: planespotter
+  labels:
+    app: adsb-sync
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: adsb-sync
+  template:
+    metadata:
+      labels:
+        app: adsb-sync
+        tier: backend
+    spec:
+      containers:
+      - name: adsb-sync
+        image: planespotter-adsb-sync:latest
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: adsb-sync-config
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi

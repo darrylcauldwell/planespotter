@@ -1,111 +1,212 @@
 {% extends "base.html" %}
-{% block health_state %}class="active"{% endblock %}
 
-{% block health_content %}
-<hr>
-<div class="panel panel-default col-md-offset-4" style="width: 33.3333%;">
-  <div class="panel-heading">
-    <h3 class="panel-title">App Healthcheck</h3>
-  </div>
-  <div class="panel-body">
-    <hr>
-    {% if app_server %}
-    <div class="alert alert-success" role="alert">
-      <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
-      <span class="sr-only">Error:</span>
-      App Server connectivity success
+{% block title %}Planespotter - System Health{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <i class="bi bi-heart-pulse fs-3 me-3" style="color: var(--ps-sky);"></i>
+    <div>
+        <h2 class="mb-0">System Health</h2>
+        <p class="text-muted mb-0">Monitor microservices status and connectivity</p>
     </div>
-    {% else %}
-    <div class="alert alert-danger" role="alert">
-      <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-      <span class="sr-only">Error:</span>
-      App Server connectivity failure
+</div>
+
+{% if health %}
+<!-- Overall Status Banner -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                {% if health.status == 'healthy' %}
+                <div class="status-card healthy" style="padding: 1.5rem;">
+                    <i class="bi bi-check-circle fs-1"></i>
+                </div>
+                {% elif health.status == 'degraded' %}
+                <div class="status-card degraded" style="padding: 1.5rem;">
+                    <i class="bi bi-exclamation-circle fs-1"></i>
+                </div>
+                {% else %}
+                <div class="status-card unhealthy" style="padding: 1.5rem;">
+                    <i class="bi bi-x-circle fs-1"></i>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col">
+                <h3 class="mb-1">
+                    System Status:
+                    {% if health.status == 'healthy' %}
+                    <span class="text-success">All Systems Operational</span>
+                    {% elif health.status == 'degraded' %}
+                    <span style="color: var(--ps-amber);">Degraded Performance</span>
+                    {% else %}
+                    <span class="text-danger">System Issues Detected</span>
+                    {% endif %}
+                </h3>
+                <p class="text-muted mb-0">
+                    <i class="bi bi-clock me-1"></i>
+                    Last checked: {{ health.timestamp }}
+                </p>
+            </div>
+            <div class="col-auto">
+                <button onclick="location.reload()" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                </button>
+            </div>
+        </div>
     </div>
-    {% endif %}
-    <hr>
-    {% if db_connection %}
-    <div class="alert alert-success" role="alert">
-      <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
-      <span class="sr-only">Error:</span>
-      Database connectivity success
+</div>
+
+<!-- Service Status Cards -->
+<div class="row g-4 mb-4">
+    {% for service in health.services %}
+    <div class="col-md-6 col-lg-4">
+        <div class="status-card {{ service.status }} h-100">
+            <div class="icon">
+                {% if service.name == 'database' %}
+                <i class="bi bi-database"></i>
+                {% elif service.name == 'valkey' %}
+                <i class="bi bi-lightning-charge"></i>
+                {% else %}
+                <i class="bi bi-server"></i>
+                {% endif %}
+            </div>
+            <h5 class="text-capitalize">{{ service.name }}</h5>
+            <p class="mb-2">
+                {% if service.status == 'healthy' %}
+                <span class="badge bg-success">Healthy</span>
+                {% elif service.status == 'degraded' %}
+                <span class="badge bg-warning">Degraded</span>
+                {% else %}
+                <span class="badge bg-danger">Unhealthy</span>
+                {% endif %}
+            </p>
+            {% if service.latency_ms %}
+            <p class="latency mb-1">
+                <i class="bi bi-speedometer2 me-1"></i>
+                {{ service.latency_ms }} ms
+            </p>
+            {% endif %}
+            {% if service.message %}
+            <small class="text-muted">{{ service.message }}</small>
+            {% endif %}
+        </div>
     </div>
-    {% else %}
-      {% if app_server %}
-      <div class="alert alert-danger" role="alert">
-        <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-        <span class="sr-only">Error:</span>
-        Database connectivity failure
-      {% else %}
-      <div class="alert alert-warning" role="alert">
-        <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span>
-        <span class="sr-only">Error:</span>
-        Database connectivity Unknown
-      {% endif %}
-      </div>
-    {% endif %}
-    <hr>
-    {% if position_server %}
-    <div class="alert alert-success" role="alert">
-      <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
-      <span class="sr-only">Error:</span>
-      Position Server connectivity success
+    {% endfor %}
+
+    <!-- Frontend Status (always show as healthy since we're rendering this) -->
+    <div class="col-md-6 col-lg-4">
+        <div class="status-card healthy h-100">
+            <div class="icon">
+                <i class="bi bi-window"></i>
+            </div>
+            <h5>Frontend</h5>
+            <p class="mb-2">
+                <span class="badge bg-success">Healthy</span>
+            </p>
+            <p class="latency mb-1">
+                <i class="bi bi-speedometer2 me-1"></i>
+                &lt; 1 ms
+            </p>
+            <small class="text-muted">Serving this page</small>
+        </div>
     </div>
-    {% else %}
-      {% if app_server %}
-      <div class="alert alert-danger" role="alert">
-        <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-        <span class="sr-only">Error:</span>
-        Position Server connectivity failure
-      {% else %}
-      <div class="alert alert-warning" role="alert">
-        <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span>
-        <span class="sr-only">Error:</span>
-        Position Server connectivity Unknown
-      {% endif %}
-      </div>
-    {% endif %}
-    <hr>
-    {% if picture_server %}
-    <div class="alert alert-success" role="alert">
-      <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
-      <span class="sr-only">Error:</span>
-      Picture Server connectivity success
+
+    <!-- API Server Status -->
+    <div class="col-md-6 col-lg-4">
+        <div class="status-card healthy h-100">
+            <div class="icon">
+                <i class="bi bi-cpu"></i>
+            </div>
+            <h5>API Server</h5>
+            <p class="mb-2">
+                <span class="badge bg-success">Healthy</span>
+            </p>
+            <small class="text-muted">Responding to health checks</small>
+        </div>
     </div>
-    {% else %}
-      {% if app_server %}
-      <div class="alert alert-danger" role="alert">
-        <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-        <span class="sr-only">Error:</span>
-        Picture Server connectivity failure
-      {% else %}
-      <div class="alert alert-warning" role="alert">
-        <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span>
-        <span class="sr-only">Error:</span>
-        Picture Server connectivity Unknown
-      {% endif %}
-      </div>
-    {% endif %}
-    <hr>
-    {% if redis_server %}
-    <div class="alert alert-success" role="alert">
-      <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
-      <span class="sr-only">Error:</span>
-      Redis Server connectivity success
+</div>
+
+{% else %}
+<!-- Connection Failed -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <div class="status-card unhealthy" style="padding: 1.5rem;">
+                    <i class="bi bi-wifi-off fs-1"></i>
+                </div>
+            </div>
+            <div class="col">
+                <h3 class="mb-1 text-danger">Connection Failed</h3>
+                <p class="text-muted mb-0">
+                    Unable to connect to the API server. Please ensure all services are running.
+                </p>
+            </div>
+            <div class="col-auto">
+                <button onclick="location.reload()" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-clockwise me-2"></i>Retry
+                </button>
+            </div>
+        </div>
     </div>
-    {% else %}
-      {% if app_server %}
-      <div class="alert alert-danger" role="alert">
-        <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-        <span class="sr-only">Error:</span>
-        Redis Server connectivity failure
-      {% else %}
-      <div class="alert alert-warning" role="alert">
-        <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span>
-        <span class="sr-only">Error:</span>
-        Redis Server connectivity Unknown
-      {% endif %}
-      </div>
-    {% endif %}
-  </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-lg-4">
+        <div class="status-card unhealthy">
+            <div class="icon">
+                <i class="bi bi-cpu"></i>
+            </div>
+            <h5>API Server</h5>
+            <p class="mb-2">
+                <span class="badge bg-danger">Unreachable</span>
+            </p>
+            <small class="text-muted">Cannot establish connection</small>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Architecture Diagram -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-diagram-3 me-2"></i>Service Architecture
+    </div>
+    <div class="card-body">
+        <div class="architecture">
+<pre class="mb-0">
+                    ┌─────────────────────────────────────────────────────────────┐
+                    │                     PLANESPOTTER                            │
+                    └─────────────────────────────────────────────────────────────┘
+
+    ┌──────────┐          ┌──────────────┐          ┌─────────────┐
+    │  Client  │  ───▶    │   Frontend   │  ───▶    │  API Server │
+    │ Browser  │  :8080   │   (FastAPI)  │  :8000   │  (FastAPI)  │
+    └──────────┘          └──────────────┘          └──────┬──────┘
+                                                          │
+                          ┌───────────────────────────────┼───────────────────────────────┐
+                          │                               │                               │
+                          ▼                               ▼                               │
+                   ┌────────────┐                  ┌─────────────┐                        │
+                   │ PostgreSQL │                  │   Valkey    │ ◀──────────────────────┤
+                   │   :5432    │                  │    :6379    │                        │
+                   │  Database  │                  │    Cache    │                        │
+                   └────────────┘                  └─────────────┘                        │
+                          │                               ▲                               │
+                          │                               │                               │
+                          │                        ┌──────┴──────┐                        │
+                          │                        │  ADSB-Sync  │ ───────────────────────┘
+                          │                        │   Service   │
+                          │                        └──────┬──────┘
+                          │                               │
+                          ▼                               ▼
+                   ┌────────────┐                  ┌─────────────┐
+                   │  OpenSky   │                  │   OpenSky   │
+                   │  Dataset   │                  │  Live API   │
+                   │ (on init)  │                  │  (polling)  │
+                   └────────────┘                  └─────────────┘
+</pre>
+        </div>
+    </div>
 </div>
 {% endblock %}

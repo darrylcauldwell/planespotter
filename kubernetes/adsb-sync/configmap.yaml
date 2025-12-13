@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: adsb-sync-config
+  namespace: planespotter
+data:
+  REDIS_HOST: valkey
+  REDIS_PORT: "6379"
+  REDIS_TTL: "60"
+  POLL_INTERVAL: "30"
+  LOG_LEVEL: INFO

@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: ghcr.io/darrylcauldwell/planespotter/db-install:1.1
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-server:
+    image: ghcr.io/darrylcauldwell/planespotter/api-server:1.1
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: postgres
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      REDIS_HOST: valkey
+      REDIS_PORT: 6379
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+
+  frontend:
+    image: ghcr.io/darrylcauldwell/planespotter/frontend:1.1
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      API_SERVER_URL: http://api-server:8000
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      - api-server
+
+  adsb-sync:
+    image: ghcr.io/darrylcauldwell/planespotter/adsb-sync:1.1
+    restart: unless-stopped
+    environment:
+      REDIS_HOST: valkey
+      REDIS_PORT: 6379
+      POLL_INTERVAL: 1800
+      REDIS_TTL: 2100
+      MAX_BACKOFF: 1800
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      valkey:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  valkey_data:

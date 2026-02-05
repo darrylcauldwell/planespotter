@@ -1,6 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 from app.config import settings
 from app.database import engine
 from app.services.redis_client import redis_client
@@ -36,6 +37,8 @@ app = FastAPI(
 
 app.include_router(health_router)
 app.include_router(aircraft_router, prefix="/api/v1")
+
+Instrumentator().instrument(app).expose(app)
 
 
 @app.get("/")

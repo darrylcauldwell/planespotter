@@ -2,6 +2,7 @@ import logging
 from fastapi import APIRouter, Request, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from app.config import settings
 from app.services.api_client import api_client
 
 logger = logging.getLogger(__name__)
@@ -93,7 +94,7 @@ async def aircraft_detail(request: Request, icao24: str):
 
 @router.get("/health", response_class=HTMLResponse)
 async def health_page(request: Request):
-    """Health dashboard page."""
+    """Observability dashboard page."""
     health = await api_client.get_health()
 
     return templates.TemplateResponse(
@@ -101,6 +102,7 @@ async def health_page(request: Request):
         {
             "request": request,
             "health": health,
+            "grafana_url": settings.grafana_url,
         },
     )
 

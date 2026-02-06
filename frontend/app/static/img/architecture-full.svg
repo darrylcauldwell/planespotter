@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 490" fill="none">
+  <style>
+    .box { stroke: #3b82f6; stroke-width: 2; rx: 8; fill: #1e293b; }
+    .box-external { stroke: #64748b; stroke-width: 2; rx: 8; fill: #0f172a; stroke-dasharray: 6 3; }
+    .label { font-family: system-ui, -apple-system, sans-serif; fill: #e2e8f0; font-size: 13px; text-anchor: middle; font-weight: 600; }
+    .sublabel { font-family: system-ui, -apple-system, sans-serif; fill: #94a3b8; font-size: 11px; text-anchor: middle; }
+    .port { font-family: ui-monospace, monospace; fill: #38bdf8; font-size: 10px; text-anchor: middle; }
+    .arrow { stroke: #475569; stroke-width: 1.5; marker-end: url(#arrowhead); }
+    .arrow-data { stroke: #3b82f6; stroke-width: 1.5; marker-end: url(#arrowhead-blue); }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#475569"/>
+    </marker>
+    <marker id="arrowhead-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#3b82f6"/>
+    </marker>
+  </defs>
+
+  <!-- Monitoring stack (above Frontend & API Server) -->
+  <rect x="240" y="5" width="420" height="75" rx="8" stroke="#64748b" stroke-width="2" fill="none" stroke-dasharray="6 3"/>
+  <text class="sublabel" x="450" y="20" fill="#64748b">Monitoring</text>
+
+  <rect class="box" x="260" y="28" width="150" height="38"/>
+  <text class="label" x="335" y="52">Prometheus</text>
+
+  <rect class="box" x="490" y="28" width="150" height="38"/>
+  <text class="label" x="565" y="52">Grafana</text>
+
+  <!-- Prometheus scrape arrows (dashed, down to Frontend & API Server) -->
+  <line class="arrow" x1="335" y1="66" x2="330" y2="108" stroke="#64748b" stroke-dasharray="4 3"/>
+  <line class="arrow" x1="390" y1="66" x2="565" y2="108" stroke="#64748b" stroke-dasharray="4 3"/>
+
+  <!-- Prometheus scrape arrows (dashed, down to Valkey, ADSB-Sync, PostgreSQL) -->
+  <line class="arrow" x1="310" y1="66" x2="315" y2="253" stroke="#64748b" stroke-dasharray="4 3"/>
+  <line class="arrow" x1="350" y1="66" x2="530" y2="253" stroke="#64748b" stroke-dasharray="4 3"/>
+  <line class="arrow" x1="400" y1="66" x2="700" y2="253" stroke="#64748b" stroke-dasharray="4 3"/>
+
+  <!-- Row 1: Client → Frontend → API Server -->
+  <rect class="box" x="40" y="110" width="130" height="60"/>
+  <text class="label" x="105" y="137">Client</text>
+  <text class="sublabel" x="105" y="153">Browser</text>
+
+  <line class="arrow" x1="170" y1="140" x2="245" y2="140"/>
+  <text class="port" x="208" y="133">:8080</text>
+
+  <rect class="box" x="255" y="110" width="150" height="60"/>
+  <text class="label" x="330" y="137">Frontend</text>
+  <text class="sublabel" x="330" y="153">(FastAPI)</text>
+
+  <line class="arrow" x1="405" y1="140" x2="480" y2="140"/>
+  <text class="port" x="443" y="133">:8000</text>
+
+  <rect class="box" x="490" y="110" width="150" height="60"/>
+  <text class="label" x="565" y="137">API Server</text>
+  <text class="sublabel" x="565" y="153">(FastAPI)</text>
+
+  <!-- API Server down to three backends -->
+  <line class="arrow-data" x1="530" y1="170" x2="315" y2="250"/>
+  <line class="arrow-data" x1="550" y1="170" x2="530" y2="250"/>
+  <line class="arrow-data" x1="600" y1="170" x2="700" y2="250"/>
+
+  <!-- Row 2: Valkey, ADSB-Sync, PostgreSQL -->
+  <rect class="box" x="245" y="255" width="140" height="70"/>
+  <text class="label" x="315" y="282">Valkey</text>
+  <text class="port" x="315" y="298">:6379</text>
+  <text class="sublabel" x="315" y="313">Cache</text>
+
+  <rect class="box" x="460" y="255" width="140" height="70"/>
+  <text class="label" x="530" y="282">ADSB-Sync</text>
+  <text class="sublabel" x="530" y="313">Service</text>
+
+  <rect class="box" x="630" y="255" width="140" height="70"/>
+  <text class="label" x="700" y="282">PostgreSQL</text>
+  <text class="port" x="700" y="298">:5432</text>
+  <text class="sublabel" x="700" y="313">Database</text>
+
+  <!-- ADSB-Sync → Valkey -->
+  <line class="arrow-data" x1="460" y1="290" x2="385" y2="290"/>
+
+  <!-- ADSB-Sync → OpenSky Live -->
+  <line class="arrow" x1="530" y1="325" x2="530" y2="405"/>
+
+  <!-- PostgreSQL → OpenSky Dataset (on init) -->
+  <line class="arrow" x1="700" y1="325" x2="700" y2="405"/>
+
+  <!-- Row 3: OpenSky sources -->
+  <rect class="box-external" x="460" y="410" width="140" height="70"/>
+  <text class="label" x="530" y="437">OpenSky</text>
+  <text class="sublabel" x="530" y="453">Live API</text>
+  <text class="sublabel" x="530" y="468">(polling)</text>
+
+  <rect class="box-external" x="630" y="410" width="140" height="70"/>
+  <text class="label" x="700" y="437">OpenSky</text>
+  <text class="sublabel" x="700" y="453">Dataset</text>
+  <text class="sublabel" x="700" y="468">(on init)</text>
+</svg>

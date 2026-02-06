@@ -1,4 +1,4 @@
-FROM postgres:15
+FROM postgres:17
 
 LABEL org.opencontainers.image.source="https://github.com/darrylcauldwell/planespotter"
 LABEL org.opencontainers.image.title="planespotter-db-install"
@@ -20,6 +20,6 @@ RUN mkdir -p /data && \
     https://opensky-network.org/datasets/metadata/aircraftDatabase.csv
 
 # Copy initialization files
-COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
-COPY import.py /import.py
+COPY --chmod=644 init.sql /docker-entrypoint-initdb.d/01-init.sql
+COPY --chmod=644 import.py /import.py
 COPY --chmod=755 import-data.sh /docker-entrypoint-initdb.d/02-import-data.sh

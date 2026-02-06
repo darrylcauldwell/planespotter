@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     poll_interval: int = 30
     max_backoff: int = 300
 
+    # Metrics
+    metrics_port: int = 9090
+
     # Logging
     log_level: str = "INFO"
 

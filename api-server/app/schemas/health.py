@@ -9,6 +9,8 @@ class ServiceHealth(BaseModel):
     status: str = Field(..., description="healthy, unhealthy, or degraded")
     latency_ms: float | None = Field(None, description="Response time in milliseconds")
     message: str | None = None
+    description: str | None = None
+    critical: bool = True
 
 
 class HealthCheckResponse(BaseModel):

@@ -16,114 +16,29 @@
         Real-time aircraft tracking powered by OpenSky Network.
         Search the registry, view live positions, and monitor your microservices.
     </p>
-    <div class="mt-4">
-        <a href="/search" class="btn btn-primary btn-lg me-2">
-            <i class="bi bi-search me-2"></i>Search Aircraft
-        </a>
-        <a href="/health" class="btn btn-outline-primary btn-lg">
-            <i class="bi bi-activity me-2"></i>System Status
-        </a>
-    </div>
 </div>
 
-<div class="row g-4 mb-4">
-    <div class="col-md-4">
-        <div class="feature-card">
-            <div class="icon">
-                <i class="bi bi-database"></i>
-            </div>
-            <h5>Aircraft Registry</h5>
-            <p>Search through thousands of aircraft records from the OpenSky Network database.</p>
-            <a href="/search" class="btn btn-outline-primary">
-                Browse Registry <i class="bi bi-arrow-right ms-1"></i>
-            </a>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+    <a href="/search" class="feature-card" style="text-decoration: none; color: inherit; cursor: pointer;">
+        <div class="icon">
+            <i class="bi bi-search"></i>
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="feature-card">
-            <div class="icon">
-                <i class="bi bi-broadcast"></i>
-            </div>
-            <h5>Live Tracking</h5>
-            <p>View real-time position data for airborne aircraft with ADS-B transponders.</p>
-            <a href="/search" class="btn btn-outline-primary">
-                Find Aircraft <i class="bi bi-arrow-right ms-1"></i>
-            </a>
+        <h5>Aircraft Search</h5>
+        <p>Search the registry and view real-time position data for airborne aircraft with ADS-B transponders.</p>
+    </a>
+    <a href="/health" class="feature-card" style="text-decoration: none; color: inherit; cursor: pointer;">
+        <div class="icon">
+            <i class="bi bi-heart-pulse"></i>
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="feature-card">
-            <div class="icon">
-                <i class="bi bi-heart-pulse"></i>
-            </div>
-            <h5>Health Monitoring</h5>
-            <p>Monitor the status of all microservices in the distributed architecture.</p>
-            <a href="/health" class="btn btn-outline-primary">
-                View Health <i class="bi bi-arrow-right ms-1"></i>
-            </a>
+        <h5>Observability</h5>
+        <p>Monitor the status of all microservices in the distributed architecture.</p>
+    </a>
+    <a href="/connectivity" class="feature-card" style="text-decoration: none; color: inherit; cursor: pointer;">
+        <div class="icon">
+            <i class="bi bi-diagram-3"></i>
         </div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header d-flex align-items-center">
-        <i class="bi bi-diagram-3 me-2"></i>
-        <h5 class="mb-0">Microservices Architecture</h5>
-    </div>
-    <div class="card-body">
-        <div class="row align-items-center">
-            <div class="col-lg-7">
-                <div class="architecture">
-<pre class="mb-0">
-┌──────────┐     ┌──────────────┐     ┌─────────────┐
-│ Browser  │────▶│   Frontend   │────▶│  API Server │
-└──────────┘     │   (FastAPI)  │     │  (FastAPI)  │
-                 └──────────────┘     └──────┬──────┘
-                                             │
-                      ┌──────────────────────┼──────────────────────┐
-                      │                      │                      │
-                      ▼                      ▼                      ▼
-               ┌────────────┐        ┌─────────────┐        ┌─────────────┐
-               │ PostgreSQL │        │    Valkey   │◀───────│  ADSB-Sync  │
-               │  Database  │        │    Cache    │        │   Service   │
-               └────────────┘        └─────────────┘        └──────┬──────┘
-                                                                   │
-                                                                   ▼
-                                                           ┌─────────────┐
-                                                           │   OpenSky   │
-                                                           │   Network   │
-                                                           └─────────────┘
-</pre>
-                </div>
-            </div>
-            <div class="col-lg-5 mt-4 mt-lg-0">
-                <h6 class="mb-3" style="color: var(--ps-sky-light);">
-                    <i class="bi bi-stack me-2"></i>Technology Stack
-                </h6>
-                <ul class="list-unstyled">
-                    <li class="mb-2">
-                        <i class="bi bi-check-circle text-success me-2"></i>
-                        <strong>Frontend:</strong> FastAPI + Jinja2 + Bootstrap 5
-                    </li>
-                    <li class="mb-2">
-                        <i class="bi bi-check-circle text-success me-2"></i>
-                        <strong>API Server:</strong> FastAPI + SQLAlchemy 2.0
-                    </li>
-                    <li class="mb-2">
-                        <i class="bi bi-check-circle text-success me-2"></i>
-                        <strong>Database:</strong> PostgreSQL 15
-                    </li>
-                    <li class="mb-2">
-                        <i class="bi bi-check-circle text-success me-2"></i>
-                        <strong>Cache:</strong> Valkey 8 (Redis-compatible)
-                    </li>
-                    <li class="mb-2">
-                        <i class="bi bi-check-circle text-success me-2"></i>
-                        <strong>Data Source:</strong> OpenSky Network API
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
+        <h5>Micro Services</h5>
+        <p>View the architecture and test service-to-service connectivity for micro-segmentation demos.</p>
+    </a>
 </div>
 {% endblock %}

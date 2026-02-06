@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     """Frontend application settings."""
 
     api_server_url: str = "http://localhost:8000"
+    grafana_url: str = "http://localhost:3000"
     debug: bool = False
     log_level: str = "INFO"
 

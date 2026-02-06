@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 LABEL org.opencontainers.image.source="https://github.com/darrylcauldwell/planespotter"
 LABEL org.opencontainers.image.title="planespotter-adsb-sync"
@@ -14,5 +14,7 @@ COPY app/ ./app/
 
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
+
+EXPOSE 9090
 
 CMD ["python", "-m", "app.main"]

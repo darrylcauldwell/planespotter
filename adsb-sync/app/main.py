@@ -1,9 +1,20 @@
 import asyncio
 import json
 import logging
+import time
 import httpx
 import redis.asyncio as redis
+from app.connectivity import start_custom_server
 from app.config import settings
+from app.metrics import (
+    SYNC_CYCLES_TOTAL,
+    SYNC_DURATION_SECONDS,
+    AIRCRAFT_STORED,
+    OPENSKY_FETCH_DURATION,
+    REDIS_STORE_DURATION,
+    CONSECUTIVE_FAILURES,
+    CURRENT_BACKOFF,
+)
 
 logging.basicConfig(
     level=getattr(logging, settings.log_level),
@@ -17,8 +28,10 @@ OPENSKY_URL = "https://opensky-network.org/api/states/all"
 async def fetch_states(client: httpx.AsyncClient) -> dict | None:
     """Fetch current aircraft states from OpenSky Network (anonymous access)."""
     try:
+        start = time.monotonic()
         response = await client.get(OPENSKY_URL, timeout=30.0)
         response.raise_for_status()
+        OPENSKY_FETCH_DURATION.observe(time.monotonic() - start)
         return response.json()
     except httpx.TimeoutException:
         logger.warning("OpenSky API request timed out")
@@ -33,6 +46,7 @@ async def fetch_states(client: httpx.AsyncClient) -> dict | None:
 
 async def store_states(r: redis.Redis, states: list) -> int:
     """Store aircraft states in Redis with TTL."""
+    start = time.monotonic()
     count = 0
     pipe = r.pipeline()
 
@@ -61,6 +75,7 @@ async def store_states(r: redis.Redis, states: list) -> int:
         count += 1
 
     await pipe.execute()
+    REDIS_STORE_DURATION.observe(time.monotonic() - start)
     return count
 
 
@@ -69,6 +84,9 @@ async def sync_loop():
     logger.info(f"Starting ADSB sync service")
     logger.info(f"Redis: {settings.redis_host}:{settings.redis_port}")
     logger.info(f"Poll interval: {settings.poll_interval}s, TTL: {settings.redis_ttl}s")
+
+    start_custom_server(settings.metrics_port)
+    logger.info(f"Metrics server started on port {settings.metrics_port}")
 
     r = redis.Redis(
         host=settings.redis_host,
@@ -89,22 +107,32 @@ async def sync_loop():
 
     async with httpx.AsyncClient() as client:
         while True:
+            cycle_start = time.monotonic()
             logger.info("Fetching aircraft states from OpenSky...")
             data = await fetch_states(client)
 
             if data and "states" in data and data["states"]:
                 count = await store_states(r, data["states"])
                 logger.info(f"Stored {count} aircraft positions in Redis")
+                AIRCRAFT_STORED.set(count)
                 consecutive_failures = 0
                 backoff = settings.poll_interval
+                SYNC_CYCLES_TOTAL.labels(status="success").inc()
             else:
                 consecutive_failures += 1
+                AIRCRAFT_STORED.set(0)
                 if data and "states" in data:
                     logger.info("No aircraft data available")
+                    SYNC_CYCLES_TOTAL.labels(status="success").inc()
                 else:
                     logger.warning(f"Failed to get data (attempt {consecutive_failures})")
                     backoff = min(backoff * 2, settings.max_backoff)
                     logger.info(f"Backing off for {backoff}s")
+                    SYNC_CYCLES_TOTAL.labels(status="failure").inc()
+
+            SYNC_DURATION_SECONDS.observe(time.monotonic() - cycle_start)
+            CONSECUTIVE_FAILURES.set(consecutive_failures)
+            CURRENT_BACKOFF.set(backoff)
 
             await asyncio.sleep(backoff)
 

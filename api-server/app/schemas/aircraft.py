@@ -67,6 +67,22 @@ class AircraftWithPosition(AircraftDetail):
     is_airborne: bool = Field(False, description="Whether aircraft is currently tracked")
 
 
+class AircraftSearchParams(BaseModel):
+    """Query parameters for aircraft search endpoint."""
+
+    registration: str | None = Field(None, description="Filter by registration")
+    icao24: str | None = Field(None, description="Filter by ICAO24 address")
+    manufacturer: str | None = Field(None, description="Filter by manufacturer")
+    model: str | None = Field(None, description="Filter by model")
+    operator: str | None = Field(None, description="Filter by operator")
+    owner: str | None = Field(None, description="Filter by owner")
+    status: str | None = Field(None, description="Filter by flight status: 'airborne' or 'ground'")
+    page: int = Field(1, ge=1, description="Page number")
+    per_page: int = Field(20, ge=1, le=100, description="Items per page")
+
+    model_config = {"extra": "forbid"}
+
+
 class PaginatedResponse(BaseModel):
     """Paginated response wrapper."""
 

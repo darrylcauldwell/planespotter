@@ -148,6 +148,41 @@ class TestHealthPage:
 
         assert response.status_code == 200
 
+    def test_health_page_uses_default_grafana_url(self, client, mock_api_client, sample_health_data):
+        """Test health page renders Grafana iframes with default URL."""
+        mock_api_client.get_health.return_value = sample_health_data
+
+        with patch("app.routers.pages.api_client", mock_api_client):
+            response = client.get("/health")
+
+        assert response.status_code == 200
+        html = response.text
+        assert "http://localhost:3000/d/http-traffic" in html
+        assert "http://localhost:3000/d/data-stores" in html
+        assert "http://localhost:3000/d/container-metrics" in html
+        assert "http://localhost:3000/d/planespotter-logs" in html
+
+    def test_health_page_uses_custom_grafana_url(self, mock_api_client, sample_health_data):
+        """Test health page renders Grafana iframes with custom URL."""
+        mock_api_client.get_health.return_value = sample_health_data
+
+        with patch("app.routers.pages.api_client", mock_api_client), \
+             patch("app.routers.pages.settings") as mock_settings:
+            mock_settings.grafana_url = "/grafana"
+            from fastapi.testclient import TestClient
+            from app.main import app
+            with TestClient(app) as test_client:
+                response = test_client.get("/health")
+
+        assert response.status_code == 200
+        html = response.text
+        assert "/grafana/d/http-traffic" in html
+        assert "/grafana/d/data-stores" in html
+        assert "/grafana/d/container-metrics" in html
+        assert "/grafana/d/planespotter-logs" in html
+        # JS variable should also use custom URL
+        assert "var GRAFANA_URL = '/grafana'" in html
+
 
 class TestConnectivityPage:
     """Tests for connectivity page."""

@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_ttl: int = 60
 
+    # Service discovery (for health checks & connectivity)
+    frontend_host: str = "frontend"
+    adsb_sync_host: str = "adsb-sync"
+    adsb_sync_port: int = 9090
+    postgres_exporter_host: str = "postgres-exporter"
+    valkey_exporter_host: str = "valkey-exporter"
+
     # Application
     debug: bool = False
     log_level: str = "INFO"

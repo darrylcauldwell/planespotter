@@ -45,11 +45,18 @@ class TestHealthEndpoints:
         """Test health dashboard endpoint."""
         mock_db_session.execute = AsyncMock(return_value=MagicMock())
 
-        response = client.get("/api/v1/health")
+        tcp_ok = {"connected": True, "latency_ms": 1.0, "error": None}
+        with patch("app.routers.health.check_tcp_connection", return_value=tcp_ok):
+            response = client.get("/api/v1/health")
         assert response.status_code == 200
         data = response.json()
         assert "status" in data
         assert "services" in data
+        assert len(data["services"]) == 12
+        critical = [s for s in data["services"] if s["critical"]]
+        non_critical = [s for s in data["services"] if not s["critical"]]
+        assert len(critical) == 5
+        assert len(non_critical) == 7
 
 
 class TestAircraftSearchEndpoint:
@@ -239,6 +246,63 @@ class TestAircraftDetailEndpoint:
         assert response.status_code == 200
 
 
+class TestHealthDashboardConfigurable:
+    """Tests for configurable service checks in health dashboard."""
+
+    def test_health_dashboard_without_exporters(self, client, mock_db_session):
+        """Test health dashboard excludes exporters when hosts are empty."""
+        mock_db_session.execute = AsyncMock(return_value=MagicMock())
+
+        tcp_ok = {"connected": True, "latency_ms": 1.0, "error": None}
+        with patch("app.routers.health.settings") as mock_settings, \
+             patch("app.routers.health.check_tcp_connection", return_value=tcp_ok):
+            # Copy real defaults for fields used by health_dashboard
+            mock_settings.database_host = "planespotter-db"
+            mock_settings.database_port = 5432
+            mock_settings.redis_host = "planespotter-cache"
+            mock_settings.redis_port = 6379
+            mock_settings.frontend_host = "planespotter-frontend"
+            mock_settings.adsb_sync_host = "planespotter-sync"
+            mock_settings.adsb_sync_port = 9090
+            # Empty strings = skip exporter checks
+            mock_settings.postgres_exporter_host = ""
+            mock_settings.valkey_exporter_host = ""
+
+            response = client.get("/api/v1/health")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["services"]) == 10
+        service_names = [s["name"] for s in data["services"]]
+        assert "postgres-exporter" not in service_names
+        assert "valkey-exporter" not in service_names
+
+    def test_health_dashboard_uses_configured_hosts(self, client, mock_db_session):
+        """Test health dashboard passes configured hosts to TCP checks."""
+        mock_db_session.execute = AsyncMock(return_value=MagicMock())
+
+        tcp_ok = {"connected": True, "latency_ms": 1.0, "error": None}
+        with patch("app.routers.health.settings") as mock_settings, \
+             patch("app.routers.health.check_tcp_connection", return_value=tcp_ok) as mock_tcp:
+            mock_settings.database_host = "planespotter-db"
+            mock_settings.database_port = 5432
+            mock_settings.redis_host = "planespotter-cache"
+            mock_settings.redis_port = 6379
+            mock_settings.frontend_host = "planespotter-frontend"
+            mock_settings.adsb_sync_host = "planespotter-sync"
+            mock_settings.adsb_sync_port = 9090
+            mock_settings.postgres_exporter_host = ""
+            mock_settings.valkey_exporter_host = ""
+
+            response = client.get("/api/v1/health")
+
+        assert response.status_code == 200
+        # Verify configured hosts were passed to TCP checks
+        tcp_hosts_called = {call.args[0] for call in mock_tcp.call_args_list}
+        assert "planespotter-frontend" in tcp_hosts_called
+        assert "planespotter-sync" in tcp_hosts_called
+
+
 class TestConnectivityEndpoint:
     """Tests for connectivity endpoint."""
 
@@ -252,3 +316,66 @@ class TestConnectivityEndpoint:
         assert "timestamp" in data
         assert "summary" in data
         assert "connections" in data
+
+    def test_connectivity_uses_configured_adsb_host(self, client, mock_db_session):
+        """Test connectivity endpoint uses configured adsb-sync host and port."""
+        mock_db_session.execute = AsyncMock(return_value=MagicMock())
+
+        adsb_response = MagicMock()
+        adsb_response.json.return_value = [
+            {"id": "adsb-to-valkey", "source": "ADSB-Sync", "destination": "Valkey",
+             "port": 6379, "protocol": "TCP", "status": "connected", "latency_ms": 1, "error": None},
+        ]
+
+        with patch("app.routers.health.settings") as mock_settings, \
+             patch("app.routers.health.check_tcp_connection") as mock_tcp, \
+             patch("httpx.AsyncClient") as mock_httpx:
+            mock_settings.database_host = "planespotter-db"
+            mock_settings.database_port = 5432
+            mock_settings.redis_host = "planespotter-cache"
+            mock_settings.redis_port = 6379
+            mock_settings.adsb_sync_host = "planespotter-sync"
+            mock_settings.adsb_sync_port = 9090
+
+            mock_tcp.return_value = {"connected": True, "latency_ms": 1.0, "error": None}
+
+            mock_client = AsyncMock()
+            mock_client.get.return_value = adsb_response
+            mock_httpx.return_value.__aenter__.return_value = mock_client
+
+            response = client.get("/api/v1/connectivity")
+
+        assert response.status_code == 200
+        # Verify the adsb-sync URL used configured host/port
+        mock_client.get.assert_called_once_with(
+            "http://planespotter-sync:9090/connectivity", timeout=5.0
+        )
+
+    def test_connectivity_fallback_uses_configured_port(self, client, mock_db_session):
+        """Test connectivity fallback uses configured redis port when adsb-sync unreachable."""
+        mock_db_session.execute = AsyncMock(return_value=MagicMock())
+
+        with patch("app.routers.health.settings") as mock_settings, \
+             patch("app.routers.health.check_tcp_connection") as mock_tcp, \
+             patch("httpx.AsyncClient") as mock_httpx:
+            mock_settings.database_host = "planespotter-db"
+            mock_settings.database_port = 5432
+            mock_settings.redis_host = "planespotter-cache"
+            mock_settings.redis_port = 7777
+            mock_settings.adsb_sync_host = "planespotter-sync"
+            mock_settings.adsb_sync_port = 9090
+
+            mock_tcp.return_value = {"connected": True, "latency_ms": 1.0, "error": None}
+
+            # Simulate adsb-sync being unreachable
+            mock_client = AsyncMock()
+            mock_client.get.side_effect = Exception("Connection refused")
+            mock_httpx.return_value.__aenter__.return_value = mock_client
+
+            response = client.get("/api/v1/connectivity")
+
+        assert response.status_code == 200
+        data = response.json()
+        # Fallback adsb-to-valkey entry should use configured redis port
+        adsb_valkey = next(c for c in data["connections"] if c["id"] == "adsb-to-valkey")
+        assert adsb_valkey["port"] == 7777

@@ -1,7 +1,7 @@
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-jinja2>=3.1.0
-httpx>=0.25.0
-pydantic-settings>=2.1.0
-python-multipart>=0.0.6
-prometheus-fastapi-instrumentator>=6.1.0
+fastapi>=0.128.0
+uvicorn[standard]>=0.40.0
+jinja2>=3.1.6
+httpx>=0.28.0
+pydantic-settings>=2.12.0
+python-multipart>=0.0.22
+prometheus-fastapi-instrumentator>=7.1.0

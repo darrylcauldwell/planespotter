@@ -44,10 +44,21 @@ def sample_health_data():
     """Sample health data from API."""
     return {
         "status": "healthy",
-        "services": {
-            "database": {"status": "healthy", "latency_ms": 5},
-            "redis": {"status": "healthy", "latency_ms": 2},
-        },
+        "timestamp": "2024-01-01T00:00:00Z",
+        "services": [
+            {"name": "database", "status": "healthy", "latency_ms": 5, "description": "PostgreSQL", "critical": True},
+            {"name": "valkey", "status": "healthy", "latency_ms": 2, "description": "Cache", "critical": True},
+            {"name": "api-server", "status": "healthy", "latency_ms": 1, "description": "FastAPI backend", "critical": True},
+            {"name": "frontend", "status": "healthy", "latency_ms": 1, "description": "Web UI", "critical": True},
+            {"name": "adsb-sync", "status": "healthy", "latency_ms": 1, "description": "ADS-B poller", "critical": True},
+            {"name": "prometheus", "status": "healthy", "latency_ms": 1, "description": "Metrics store", "critical": False},
+            {"name": "grafana", "status": "healthy", "latency_ms": 1, "description": "Dashboards", "critical": False},
+            {"name": "loki", "status": "healthy", "latency_ms": 1, "description": "Log aggregator", "critical": False},
+            {"name": "promtail", "status": "healthy", "latency_ms": 1, "description": "Log shipper", "critical": False},
+            {"name": "cadvisor", "status": "healthy", "latency_ms": 1, "description": "Container metrics", "critical": False},
+            {"name": "postgres-exporter", "status": "healthy", "latency_ms": 1, "description": "DB metrics", "critical": False},
+            {"name": "valkey-exporter", "status": "healthy", "latency_ms": 1, "description": "Cache metrics", "critical": False},
+        ],
     }
 
 
@@ -57,8 +68,8 @@ def sample_connectivity_data():
     return {
         "timestamp": "2024-01-01T00:00:00Z",
         "summary": {
-            "total": 3,
-            "connected": 3,
+            "total": 4,
+            "connected": 4,
             "blocked": 0,
             "status": "healthy",
         },
@@ -84,8 +95,18 @@ def sample_connectivity_data():
                 "error": None,
             },
             {
-                "id": "api-to-opensky",
-                "source": "API Server",
+                "id": "adsb-to-valkey",
+                "source": "ADSB-Sync",
+                "destination": "Valkey",
+                "port": 6379,
+                "protocol": "TCP",
+                "status": "connected",
+                "latency_ms": 4,
+                "error": None,
+            },
+            {
+                "id": "adsb-to-opensky",
+                "source": "ADSB-Sync",
                 "destination": "OpenSky Network",
                 "port": 443,
                 "protocol": "HTTPS",

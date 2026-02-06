@@ -1,212 +1,220 @@
 {% extends "base.html" %}
 
-{% block title %}Planespotter - System Health{% endblock %}
+{% block title %}Planespotter - Observability{% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-center mb-4">
-    <i class="bi bi-heart-pulse fs-3 me-3" style="color: var(--ps-sky);"></i>
-    <div>
-        <h2 class="mb-0">System Health</h2>
-        <p class="text-muted mb-0">Monitor microservices status and connectivity</p>
+{% if health %}
+<!-- Page Heading -->
+<div class="flex items-center justify-between mb-6">
+    <h2 class="text-xl font-semibold text-[var(--ps-heading)]">Observability</h2>
+    <div class="flex items-center gap-3">
+        <span class="text-xs text-[var(--ps-text-muted)]">{{ health.timestamp }}</span>
+        <button onclick="location.reload()"
+                class="w-8 h-8 rounded-full flex items-center justify-center
+                       bg-[var(--ps-translucent)] hover:bg-[var(--ps-sky-light)]
+                       text-[var(--ps-text-muted)] hover:text-[var(--ps-sky)]
+                       transition-colors" title="Refresh">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+        </button>
     </div>
 </div>
 
-{% if health %}
-<!-- Overall Status Banner -->
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="row align-items-center">
-            <div class="col-auto">
-                {% if health.status == 'healthy' %}
-                <div class="status-card healthy" style="padding: 1.5rem;">
-                    <i class="bi bi-check-circle fs-1"></i>
-                </div>
-                {% elif health.status == 'degraded' %}
-                <div class="status-card degraded" style="padding: 1.5rem;">
-                    <i class="bi bi-exclamation-circle fs-1"></i>
-                </div>
-                {% else %}
-                <div class="status-card unhealthy" style="padding: 1.5rem;">
-                    <i class="bi bi-x-circle fs-1"></i>
-                </div>
-                {% endif %}
+<!-- Planespotter -->
+<h2 class="text-lg font-semibold text-[var(--ps-heading)] mb-3">Planespotter</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+    {% for service in health.services %}
+    {% if service.critical %}
+    <div class="bg-[var(--ps-bg-card)] rounded-lg p-4 border border-[var(--ps-translucent)]">
+        <div class="flex items-center gap-3">
+            {% if service.status == 'healthy' %}
+            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                 style="background: rgba(48, 209, 88, 0.15);">
+                <svg class="w-4 h-4" style="color: var(--ps-green);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
             </div>
-            <div class="col">
-                <h3 class="mb-1">
-                    System Status:
-                    {% if health.status == 'healthy' %}
-                    <span class="text-success">All Systems Operational</span>
-                    {% elif health.status == 'degraded' %}
-                    <span style="color: var(--ps-amber);">Degraded Performance</span>
-                    {% else %}
-                    <span class="text-danger">System Issues Detected</span>
-                    {% endif %}
-                </h3>
-                <p class="text-muted mb-0">
-                    <i class="bi bi-clock me-1"></i>
-                    Last checked: {{ health.timestamp }}
+            {% elif service.status == 'degraded' %}
+            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                 style="background: rgba(255, 149, 0, 0.15);">
+                <svg class="w-4 h-4" style="color: var(--ps-amber);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+            </div>
+            {% else %}
+            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                 style="background: rgba(255, 59, 48, 0.15);">
+                <svg class="w-4 h-4" style="color: var(--ps-red);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </div>
+            {% endif %}
+            <div>
+                <h3 class="font-medium text-[var(--ps-heading)] text-sm capitalize">{{ service.name }}</h3>
+                <p class="text-xs text-[var(--ps-text-muted)]">
+                    {% if service.status == 'healthy' %}Healthy{% elif service.status == 'degraded' %}Degraded{% else %}Unhealthy{% endif %}{% if service.latency_ms %} · {{ service.latency_ms }} ms{% endif %}
                 </p>
             </div>
-            <div class="col-auto">
-                <button onclick="location.reload()" class="btn btn-outline-primary">
-                    <i class="bi bi-arrow-clockwise me-2"></i>Refresh
-                </button>
-            </div>
         </div>
+        <div class="text-xs text-[var(--ps-text-muted)] mt-2">{{ service.description }}</div>
     </div>
+    {% endif %}
+    {% endfor %}
 </div>
 
-<!-- Service Status Cards -->
-<div class="row g-4 mb-4">
+<!-- Observability Stack -->
+<h2 class="text-lg font-semibold text-[var(--ps-heading)] mb-3">Observability Stack</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
     {% for service in health.services %}
-    <div class="col-md-6 col-lg-4">
-        <div class="status-card {{ service.status }} h-100">
-            <div class="icon">
-                {% if service.name == 'database' %}
-                <i class="bi bi-database"></i>
-                {% elif service.name == 'valkey' %}
-                <i class="bi bi-lightning-charge"></i>
-                {% else %}
-                <i class="bi bi-server"></i>
-                {% endif %}
+    {% if not service.critical %}
+    <div class="bg-[var(--ps-bg-card)] rounded-lg p-4 border border-[var(--ps-translucent)]">
+        <div class="flex items-center gap-3">
+            {% if service.status == 'healthy' %}
+            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                 style="background: rgba(48, 209, 88, 0.15);">
+                <svg class="w-4 h-4" style="color: var(--ps-green);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
             </div>
-            <h5 class="text-capitalize">{{ service.name }}</h5>
-            <p class="mb-2">
-                {% if service.status == 'healthy' %}
-                <span class="badge bg-success">Healthy</span>
-                {% elif service.status == 'degraded' %}
-                <span class="badge bg-warning">Degraded</span>
-                {% else %}
-                <span class="badge bg-danger">Unhealthy</span>
-                {% endif %}
-            </p>
-            {% if service.latency_ms %}
-            <p class="latency mb-1">
-                <i class="bi bi-speedometer2 me-1"></i>
-                {{ service.latency_ms }} ms
-            </p>
+            {% elif service.status == 'degraded' %}
+            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                 style="background: rgba(255, 149, 0, 0.15);">
+                <svg class="w-4 h-4" style="color: var(--ps-amber);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+            </div>
+            {% else %}
+            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                 style="background: rgba(255, 59, 48, 0.15);">
+                <svg class="w-4 h-4" style="color: var(--ps-red);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </div>
             {% endif %}
-            {% if service.message %}
-            <small class="text-muted">{{ service.message }}</small>
-            {% endif %}
+            <div>
+                <h3 class="font-medium text-[var(--ps-heading)] text-sm capitalize">{{ service.name }}</h3>
+                <p class="text-xs text-[var(--ps-text-muted)]">
+                    {% if service.status == 'healthy' %}Healthy{% elif service.status == 'degraded' %}Degraded{% else %}Unhealthy{% endif %}{% if service.latency_ms %} · {{ service.latency_ms }} ms{% endif %}
+                </p>
+            </div>
         </div>
+        <div class="text-xs text-[var(--ps-text-muted)] mt-2">{{ service.description }}</div>
     </div>
+    {% endif %}
     {% endfor %}
-
-    <!-- Frontend Status (always show as healthy since we're rendering this) -->
-    <div class="col-md-6 col-lg-4">
-        <div class="status-card healthy h-100">
-            <div class="icon">
-                <i class="bi bi-window"></i>
-            </div>
-            <h5>Frontend</h5>
-            <p class="mb-2">
-                <span class="badge bg-success">Healthy</span>
-            </p>
-            <p class="latency mb-1">
-                <i class="bi bi-speedometer2 me-1"></i>
-                &lt; 1 ms
-            </p>
-            <small class="text-muted">Serving this page</small>
-        </div>
-    </div>
-
-    <!-- API Server Status -->
-    <div class="col-md-6 col-lg-4">
-        <div class="status-card healthy h-100">
-            <div class="icon">
-                <i class="bi bi-cpu"></i>
-            </div>
-            <h5>API Server</h5>
-            <p class="mb-2">
-                <span class="badge bg-success">Healthy</span>
-            </p>
-            <small class="text-muted">Responding to health checks</small>
-        </div>
-    </div>
 </div>
 
 {% else %}
 <!-- Connection Failed -->
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <div class="status-card unhealthy" style="padding: 1.5rem;">
-                    <i class="bi bi-wifi-off fs-1"></i>
-                </div>
-            </div>
-            <div class="col">
-                <h3 class="mb-1 text-danger">Connection Failed</h3>
-                <p class="text-muted mb-0">
-                    Unable to connect to the API server. Please ensure all services are running.
-                </p>
-            </div>
-            <div class="col-auto">
-                <button onclick="location.reload()" class="btn btn-outline-primary">
-                    <i class="bi bi-arrow-clockwise me-2"></i>Retry
-                </button>
-            </div>
-        </div>
-    </div>
+<div class="flex items-center justify-between mb-6">
+    <h2 class="text-xl font-semibold text-[var(--ps-heading)]">Observability</h2>
+    <button onclick="location.reload()"
+            class="w-8 h-8 rounded-full flex items-center justify-center
+                   bg-[var(--ps-translucent)] hover:bg-[var(--ps-sky-light)]
+                   text-[var(--ps-text-muted)] hover:text-[var(--ps-sky)]
+                   transition-colors" title="Retry">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+    </button>
 </div>
 
-<div class="row g-4 mb-4">
-    <div class="col-md-6 col-lg-4">
-        <div class="status-card unhealthy">
-            <div class="icon">
-                <i class="bi bi-cpu"></i>
+<h2 class="text-lg font-semibold text-[var(--ps-heading)] mb-3">Services</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+    <div class="bg-[var(--ps-bg-card)] rounded-lg p-4 border border-[var(--ps-translucent)]">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                 style="background: rgba(255, 59, 48, 0.15);">
+                <svg class="w-4 h-4" style="color: var(--ps-red);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
             </div>
-            <h5>API Server</h5>
-            <p class="mb-2">
-                <span class="badge bg-danger">Unreachable</span>
-            </p>
-            <small class="text-muted">Cannot establish connection</small>
+            <div>
+                <h3 class="font-medium text-[var(--ps-heading)] text-sm">API Server</h3>
+                <p class="text-xs text-[var(--ps-text-muted)]">Unreachable</p>
+            </div>
         </div>
+        <div class="text-xs text-[var(--ps-text-muted)] mt-2">Cannot establish connection</div>
     </div>
 </div>
 {% endif %}
 
-<!-- Architecture Diagram -->
-<div class="card">
-    <div class="card-header">
-        <i class="bi bi-diagram-3 me-2"></i>Service Architecture
+<!-- HTTP Traffic -->
+<details class="bg-[var(--ps-bg-card)] rounded-lg border border-[var(--ps-translucent)] overflow-hidden mb-4 group">
+    <summary class="px-4 py-3 cursor-pointer flex items-center justify-between hover:bg-[var(--ps-translucent)] transition-colors">
+        <h2 class="font-semibold text-[var(--ps-heading)]">HTTP Traffic</h2>
+        <svg class="w-5 h-5 text-[var(--ps-text-muted)] transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </summary>
+    <div class="border-t border-[var(--ps-translucent)]">
+        <iframe src="{{ grafana_url }}/d/http-traffic?kiosk=1&theme=dark&refresh=10s"
+                width="100%" height="500" frameborder="0"></iframe>
     </div>
-    <div class="card-body">
-        <div class="architecture">
-<pre class="mb-0">
-                    ┌─────────────────────────────────────────────────────────────┐
-                    │                     PLANESPOTTER                            │
-                    └─────────────────────────────────────────────────────────────┘
+</details>
 
-    ┌──────────┐          ┌──────────────┐          ┌─────────────┐
-    │  Client  │  ───▶    │   Frontend   │  ───▶    │  API Server │
-    │ Browser  │  :8080   │   (FastAPI)  │  :8000   │  (FastAPI)  │
-    └──────────┘          └──────────────┘          └──────┬──────┘
-                                                          │
-                          ┌───────────────────────────────┼───────────────────────────────┐
-                          │                               │                               │
-                          ▼                               ▼                               │
-                   ┌────────────┐                  ┌─────────────┐                        │
-                   │ PostgreSQL │                  │   Valkey    │ ◀──────────────────────┤
-                   │   :5432    │                  │    :6379    │                        │
-                   │  Database  │                  │    Cache    │                        │
-                   └────────────┘                  └─────────────┘                        │
-                          │                               ▲                               │
-                          │                               │                               │
-                          │                        ┌──────┴──────┐                        │
-                          │                        │  ADSB-Sync  │ ───────────────────────┘
-                          │                        │   Service   │
-                          │                        └──────┬──────┘
-                          │                               │
-                          ▼                               ▼
-                   ┌────────────┐                  ┌─────────────┐
-                   │  OpenSky   │                  │   OpenSky   │
-                   │  Dataset   │                  │  Live API   │
-                   │ (on init)  │                  │  (polling)  │
-                   └────────────┘                  └─────────────┘
-</pre>
-        </div>
+<!-- Data Stores -->
+<details class="bg-[var(--ps-bg-card)] rounded-lg border border-[var(--ps-translucent)] overflow-hidden mb-4 group">
+    <summary class="px-4 py-3 cursor-pointer flex items-center justify-between hover:bg-[var(--ps-translucent)] transition-colors">
+        <h2 class="font-semibold text-[var(--ps-heading)]">Data Stores</h2>
+        <svg class="w-5 h-5 text-[var(--ps-text-muted)] transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </summary>
+    <div class="border-t border-[var(--ps-translucent)]">
+        <iframe src="{{ grafana_url }}/d/data-stores?kiosk=1&theme=dark&refresh=10s"
+                width="100%" height="600" frameborder="0"></iframe>
     </div>
-</div>
+</details>
+
+<!-- Container Resources -->
+<details class="bg-[var(--ps-bg-card)] rounded-lg border border-[var(--ps-translucent)] overflow-hidden mb-4 group">
+    <summary class="px-4 py-3 cursor-pointer flex items-center justify-between hover:bg-[var(--ps-translucent)] transition-colors">
+        <h2 class="font-semibold text-[var(--ps-heading)]">Container Resources</h2>
+        <svg class="w-5 h-5 text-[var(--ps-text-muted)] transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </summary>
+    <div class="border-t border-[var(--ps-translucent)]">
+        <iframe src="{{ grafana_url }}/d/container-metrics?kiosk=1&theme=dark&refresh=10s"
+                width="100%" height="500" frameborder="0"></iframe>
+    </div>
+</details>
+
+<!-- Logs -->
+<details class="bg-[var(--ps-bg-card)] rounded-lg border border-[var(--ps-translucent)] overflow-hidden mb-4 group">
+    <summary class="px-4 py-3 cursor-pointer flex items-center justify-between hover:bg-[var(--ps-translucent)] transition-colors">
+        <h2 class="font-semibold text-[var(--ps-heading)]">Logs</h2>
+        <div class="flex items-center gap-3">
+            <select id="log-level-select"
+                    class="text-xs bg-[var(--ps-bg-input)] text-[var(--ps-text)] border border-[var(--ps-border)]
+                           rounded px-2 py-1 cursor-pointer"
+                    onclick="event.stopPropagation()"
+                    onchange="updateLogsIframe(this.value)">
+                <option value="error|fatal|critical|panic" selected>Error</option>
+                <option value="warn|warning|error|fatal|critical|panic">Warning</option>
+                <option value="info|warn|warning|error|fatal|critical|panic">Info</option>
+            </select>
+            <svg class="w-5 h-5 text-[var(--ps-text-muted)] transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+        </div>
+    </summary>
+    <div class="border-t border-[var(--ps-translucent)]">
+        <iframe id="logs-iframe"
+                src="{{ grafana_url }}/d/planespotter-logs?kiosk=1&theme=dark&refresh=5s&var-log_level=error|fatal|critical|panic&var-container=.%2B"
+                width="100%" height="400" frameborder="0"></iframe>
+    </div>
+</details>
+
+<script>
+var GRAFANA_URL = '{{ grafana_url }}';
+function updateLogsIframe(level) {
+    var iframe = document.getElementById('logs-iframe');
+    iframe.src = GRAFANA_URL + '/d/planespotter-logs?kiosk=1&theme=dark&refresh=5s&var-log_level=' + encodeURIComponent(level) + '&var-container=.%2B';
+}
+</script>
 {% endblock %}

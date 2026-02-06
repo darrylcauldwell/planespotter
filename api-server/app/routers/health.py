@@ -1,14 +1,38 @@
+import asyncio
 import time
 import socket
 from datetime import datetime, timezone
+import httpx
 from fastapi import APIRouter
 from sqlalchemy import text
 from app.database import AsyncSessionLocal
 from app.services.redis_client import redis_client
 from app.schemas.health import ServiceHealth, HealthCheckResponse
 from app.config import settings
+from app.metrics import SERVICE_UP, SERVICE_LATENCY
 
 router = APIRouter(tags=["health"])
+
+def get_service_checks():
+    checks = [
+        # Core app services (critical=True)
+        {"name": "database", "host": settings.database_host, "port": settings.database_port, "description": "PostgreSQL", "critical": True, "check": "database"},
+        {"name": "valkey", "host": settings.redis_host, "port": settings.redis_port, "description": "Cache", "critical": True, "check": "valkey"},
+        {"name": "api-server", "host": "localhost", "port": 8000, "description": "FastAPI backend", "critical": True, "check": "tcp"},
+        {"name": "frontend", "host": settings.frontend_host, "port": 8080, "description": "Web UI", "critical": True, "check": "tcp"},
+        {"name": "adsb-sync", "host": settings.adsb_sync_host, "port": settings.adsb_sync_port, "description": "ADS-B poller", "critical": True, "check": "tcp"},
+        # Observability stack (critical=False)
+        {"name": "prometheus", "host": "prometheus", "port": 9090, "description": "Metrics store", "critical": False, "check": "tcp"},
+        {"name": "grafana", "host": "grafana", "port": 3000, "description": "Dashboards", "critical": False, "check": "tcp"},
+        {"name": "loki", "host": "loki", "port": 3100, "description": "Log aggregator", "critical": False, "check": "tcp"},
+        {"name": "promtail", "host": "promtail", "port": 9080, "description": "Log shipper", "critical": False, "check": "tcp"},
+        {"name": "cadvisor", "host": "cadvisor", "port": 8080, "description": "Container metrics", "critical": False, "check": "tcp"},
+    ]
+    if settings.postgres_exporter_host:
+        checks.append({"name": "postgres-exporter", "host": settings.postgres_exporter_host, "port": 9187, "description": "DB metrics", "critical": False, "check": "tcp"})
+    if settings.valkey_exporter_host:
+        checks.append({"name": "valkey-exporter", "host": settings.valkey_exporter_host, "port": 9121, "description": "Cache metrics", "critical": False, "check": "tcp"})
+    return checks
 
 
 @router.get("/health")
@@ -33,35 +57,70 @@ async def health_dashboard():
     """Detailed health check for dashboard display."""
     services = []
 
-    # Check database
+    # --- Deep checks for database and valkey ---
     db_start = time.time()
     db_ok = await check_database()
-    db_latency = (time.time() - db_start) * 1000
+    db_duration = time.time() - db_start
+    SERVICE_UP.labels(service="database").set(1 if db_ok else 0)
+    SERVICE_LATENCY.labels(service="database").observe(db_duration)
     services.append(
         ServiceHealth(
             name="database",
             status="healthy" if db_ok else "unhealthy",
-            latency_ms=round(db_latency, 2),
+            latency_ms=round(db_duration * 1000, 2),
             message="PostgreSQL connected" if db_ok else "Connection failed",
+            description="PostgreSQL",
+            critical=True,
         )
     )
 
-    # Check Valkey
     valkey_start = time.time()
     valkey_ok = await redis_client.ping()
-    valkey_latency = (time.time() - valkey_start) * 1000
+    valkey_duration = time.time() - valkey_start
+    SERVICE_UP.labels(service="valkey").set(1 if valkey_ok else 0)
+    SERVICE_LATENCY.labels(service="valkey").observe(valkey_duration)
     services.append(
         ServiceHealth(
             name="valkey",
             status="healthy" if valkey_ok else "unhealthy",
-            latency_ms=round(valkey_latency, 2),
+            latency_ms=round(valkey_duration * 1000, 2),
             message="Valkey connected" if valkey_ok else "Connection failed",
+            description="Cache",
+            critical=True,
         )
     )
 
-    # Determine overall status
-    all_healthy = all(s.status == "healthy" for s in services)
-    any_healthy = any(s.status == "healthy" for s in services)
+    # --- TCP checks for remaining services (concurrent) ---
+    tcp_services = [s for s in get_service_checks() if s["check"] == "tcp"]
+    loop = asyncio.get_event_loop()
+    tcp_results = await asyncio.gather(
+        *[
+            loop.run_in_executor(
+                None, check_tcp_connection, svc["host"], svc["port"]
+            )
+            for svc in tcp_services
+        ]
+    )
+
+    for svc, result in zip(tcp_services, tcp_results):
+        connected = result["connected"]
+        SERVICE_UP.labels(service=svc["name"]).set(1 if connected else 0)
+        SERVICE_LATENCY.labels(service=svc["name"]).observe(result["latency_ms"] / 1000)
+        services.append(
+            ServiceHealth(
+                name=svc["name"],
+                status="healthy" if connected else "unhealthy",
+                latency_ms=result["latency_ms"],
+                message=None if connected else result["error"],
+                description=svc["description"],
+                critical=svc["critical"],
+            )
+        )
+
+    # Determine overall status (only critical services affect it)
+    critical_services = [s for s in services if s.critical]
+    all_healthy = all(s.status == "healthy" for s in critical_services)
+    any_healthy = any(s.status == "healthy" for s in critical_services)
 
     if all_healthy:
         overall = "healthy"
@@ -155,18 +214,18 @@ async def connectivity_matrix():
         "error": valkey_result["error"],
     })
 
-    # Test external connectivity - OpenSky API
-    opensky_result = check_tcp_connection("opensky-network.org", 443, timeout=5.0)
-    connections.append({
-        "id": "api-to-opensky",
-        "source": "API Server",
-        "destination": "OpenSky Network",
-        "port": 443,
-        "protocol": "HTTPS",
-        "status": "connected" if opensky_result["connected"] else "blocked",
-        "latency_ms": opensky_result["latency_ms"],
-        "error": opensky_result["error"],
-    })
+    # Fetch ADSB-Sync's own connectivity tests
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"http://{settings.adsb_sync_host}:{settings.adsb_sync_port}/connectivity", timeout=5.0)
+            adsb_connections = resp.json()
+    except Exception:
+        adsb_connections = [
+            {"id": "adsb-to-valkey", "source": "ADSB-Sync", "destination": "Valkey", "port": settings.redis_port, "protocol": "TCP", "status": "blocked", "latency_ms": 0, "error": "ADSB-Sync unreachable"},
+            {"id": "adsb-to-opensky", "source": "ADSB-Sync", "destination": "OpenSky Network", "port": 443, "protocol": "HTTPS", "status": "blocked", "latency_ms": 0, "error": "ADSB-Sync unreachable"},
+        ]
+
+    connections.extend(adsb_connections)
 
     # Count stats
     total = len(connections)

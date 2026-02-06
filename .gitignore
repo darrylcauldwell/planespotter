@@ -95,6 +95,9 @@ secrets.yml
 node_modules/
 npm-debug.log*
 
+# Tailwind build output
+frontend/app/static/css/output.css
+
 # Docker
 docker-compose.override.yml
 docker-compose.override.yaml

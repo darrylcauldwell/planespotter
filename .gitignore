@@ -91,6 +91,10 @@ dmypy.json
 secrets.yaml
 secrets.yml
 
+# Node
+node_modules/
+npm-debug.log*
+
 # Docker
 docker-compose.override.yml
 docker-compose.override.yaml

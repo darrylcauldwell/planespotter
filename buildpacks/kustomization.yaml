@@ -1,0 +1,94 @@
+# Planespotter built by Cloud Native Buildpacks: the kpack Images that build it, and the app
+# deployed from what they build, in a namespace of its own.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: planespotter-buildpacks
+
+resources:
+  - ../kubernetes
+  - images.yaml
+  - serviceaccounts.yaml
+  # The api-server's status page checks adsb-sync at adsb-sync:9090, as docker-compose names
+  # it; the manifests above give it no Service.
+  - adsb-sync-service.yaml
+
+# kpack pushes each build as :latest.
+images:
+  - name: planespotter-api
+    newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/api-server
+    newTag: latest
+  - name: planespotter-frontend
+    newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/frontend
+    newTag: latest
+  - name: planespotter-adsb-sync
+    newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/adsb-sync
+    newTag: latest
+  # The database stays the Dockerfile-built image: Postgres with data in it, not app code.
+  - name: planespotter-db
+    newName: ghcr.io/darrylcauldwell/planespotter/db-install
+    digest: sha256:97ea1dc5d9a1c1132301e88ed2bd107f24b23ac0cadf8c2ae8b05e91b3c0d6a8
+
+patches:
+  # No ingress controller: the frontend takes a load balancer address. The status page checks
+  # the frontend at frontend:8080, docker-compose's port, so the Service offers it beside 80.
+  - target:
+      kind: Ingress
+      name: frontend-ingress
+    patch: |-
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: frontend-ingress
+  - target:
+      kind: Service
+      name: frontend
+    patch: |-
+      - op: replace
+        path: /spec/type
+        value: LoadBalancer
+      - op: add
+        path: /spec/ports/-
+        value: {name: app, port: 8080, targetPort: 8080}
+
+  # The manifests rely on a default StorageClass; this names the cluster's own.
+  - target:
+      kind: PersistentVolumeClaim
+      name: postgres-pvc
+    patch: |-
+      - op: add
+        path: /spec/storageClassName
+        value: vsan-default-storage-policy
+
+  # A fresh volume's root holds lost+found, which initdb refuses, so the data goes one level
+  # down. The first start's seed import needs more memory and CPU than the manifests allow, and
+  # runs against a server listening only on its socket: readiness over TCP keeps Postgres
+  # unready until the real server is up.
+  - target:
+      kind: Deployment
+      name: postgres
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env
+        value:
+          - name: PGDATA
+            value: /var/lib/postgresql/data/pgdata
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 2Gi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "2"
+      - op: replace
+        path: /spec/template/spec/containers/0/readinessProbe/exec/command
+        value: [pg_isready, -h, 127.0.0.1, -U, postgres]
+
+  # The postgres and valkey images start as root, which the "restricted" Pod Security Standard
+  # refuses; the buildpack-built images run as a non-root user and would pass it.
+  - target:
+      kind: Namespace
+    patch: |-
+      - op: add
+        path: /metadata/labels/pod-security.kubernetes.io~1enforce
+        value: baseline

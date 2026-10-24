@@ -1,0 +1,76 @@
+# One kpack Image per service, each built from its own folder on this branch with the platform
+# team's builder. kpack rebuilds an Image when its folder changes and rebases or rebuilds it
+# when the builder does. The build settings point the build at the platform's package mirror.
+apiVersion: kpack.io/v1alpha2
+kind: Image
+metadata:
+  name: api-server
+spec:
+  tag: ghcr.io/darrylcauldwell/planespotter-buildpacks/api-server
+  serviceAccountName: builder
+  builder:
+    kind: ClusterBuilder
+    name: python-node
+  source:
+    git:
+      url: https://github.com/darrylcauldwell/planespotter
+      revision: buildpacks
+    subPath: api-server
+  build:
+    env:
+      - name: PIP_INDEX_URL
+        value: http://packages.mirror.svc/pypi/simple
+      - name: PIP_TRUSTED_HOST
+        value: packages.mirror.svc
+      - name: BP_DEPENDENCY_MIRROR
+        value: http://packages.mirror.svc/{originalHost}
+---
+apiVersion: kpack.io/v1alpha2
+kind: Image
+metadata:
+  name: frontend
+spec:
+  tag: ghcr.io/darrylcauldwell/planespotter-buildpacks/frontend
+  serviceAccountName: builder
+  builder:
+    kind: ClusterBuilder
+    name: python-node
+  source:
+    git:
+      url: https://github.com/darrylcauldwell/planespotter
+      revision: buildpacks
+    subPath: frontend
+  build:
+    env:
+      - name: PIP_INDEX_URL
+        value: http://packages.mirror.svc/pypi/simple
+      - name: PIP_TRUSTED_HOST
+        value: packages.mirror.svc
+      - name: NPM_CONFIG_REGISTRY
+        value: http://packages.mirror.svc/npm/
+      - name: BP_DEPENDENCY_MIRROR
+        value: http://packages.mirror.svc/{originalHost}
+---
+apiVersion: kpack.io/v1alpha2
+kind: Image
+metadata:
+  name: adsb-sync
+spec:
+  tag: ghcr.io/darrylcauldwell/planespotter-buildpacks/adsb-sync
+  serviceAccountName: builder
+  builder:
+    kind: ClusterBuilder
+    name: python-node
+  source:
+    git:
+      url: https://github.com/darrylcauldwell/planespotter
+      revision: buildpacks
+    subPath: adsb-sync
+  build:
+    env:
+      - name: PIP_INDEX_URL
+        value: http://packages.mirror.svc/pypi/simple
+      - name: PIP_TRUSTED_HOST
+        value: packages.mirror.svc
+      - name: BP_DEPENDENCY_MIRROR
+        value: http://packages.mirror.svc/{originalHost}

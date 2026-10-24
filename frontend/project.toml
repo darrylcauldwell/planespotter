@@ -1,0 +1,16 @@
+[_]
+schema-version = "0.2"
+
+[[io.buildpacks.build.env]]
+name = "BP_CPYTHON_VERSION"
+value = "3.13.*"
+
+# Paketo's python-package-managers buildpacks, which replace its per-tool Python buildpacks.
+[[io.buildpacks.build.env]]
+name = "BP_ENABLE_PACKAGE_MANAGERS"
+value = "true"
+
+# Runs package.json's build:css script, which compiles the Tailwind CSS, during the build.
+[[io.buildpacks.build.env]]
+name = "BP_NODE_RUN_SCRIPTS"
+value = "build:css"

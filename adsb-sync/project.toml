@@ -1,0 +1,11 @@
+[_]
+schema-version = "0.2"
+
+[[io.buildpacks.build.env]]
+name = "BP_CPYTHON_VERSION"
+value = "3.13.*"
+
+# Paketo's python-package-managers buildpacks, which replace its per-tool Python buildpacks.
+[[io.buildpacks.build.env]]
+name = "BP_ENABLE_PACKAGE_MANAGERS"
+value = "true"

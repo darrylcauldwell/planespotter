@@ -18,7 +18,7 @@ images:
   - name: planespotter-api
     newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/api-server
     newTag: latest
-    digest: sha256:739be23667b98b3ef311fa49ef5b344798039fcc8debdc66572f1a26c3f706aa # {"$imagepolicy": "planespotter-buildpacks:api-server:digest"}
+    digest: sha256:0ce21b3276c28e70ce45cae63382a53ba37a1716d4ca9bda933ed85f23fba5c8 # {"$imagepolicy": "planespotter-buildpacks:api-server:digest"}
   - name: planespotter-frontend
     newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/frontend
     newTag: latest
@@ -26,7 +26,7 @@ images:
   - name: planespotter-adsb-sync
     newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/adsb-sync
     newTag: latest
-    digest: sha256:3aaf43e62d2ed7172880c20422ba7d6a64ecca281dea4aa03ac4c36e1b7ec3e1 # {"$imagepolicy": "planespotter-buildpacks:adsb-sync:digest"}
+    digest: sha256:3d5b5dd565c0fa0c367d6e9eb4495948831144e34b1550c3f9cf140a2a44949a # {"$imagepolicy": "planespotter-buildpacks:adsb-sync:digest"}
   # The database stays the Dockerfile-built image: Postgres with data in it, not app code.
   - name: planespotter-db
     newName: ghcr.io/darrylcauldwell/planespotter/db-install

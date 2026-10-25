@@ -63,6 +63,16 @@ patches:
         path: /spec/template/spec/enableServiceLinks
         value: false
 
+  # kpack pushes every build under :latest, and a node that already holds :latest would otherwise
+  # start a restarted pod on its old copy.
+  - target:
+      kind: Deployment
+      name: (api-server|frontend|adsb-sync)
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+
   # The manifests rely on a default StorageClass; this names the cluster's own.
   - target:
       kind: PersistentVolumeClaim

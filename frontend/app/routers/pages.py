@@ -13,7 +13,7 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """Home page."""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 @router.get("/search", response_class=HTMLResponse)
@@ -50,9 +50,9 @@ async def search(
             error = "Failed to connect to API server"
 
     return templates.TemplateResponse(
+        request,
         "search.html",
         {
-            "request": request,
             "results": results,
             "error": error,
             "registration": registration or "",
@@ -82,9 +82,9 @@ async def aircraft_detail(request: Request, icao24: str):
         error = "Failed to connect to API server"
 
     return templates.TemplateResponse(
+        request,
         "details.html",
         {
-            "request": request,
             "aircraft": aircraft,
             "error": error,
             "icao24": icao24,
@@ -98,9 +98,9 @@ async def health_page(request: Request):
     health = await api_client.get_health()
 
     return templates.TemplateResponse(
+        request,
         "health.html",
         {
-            "request": request,
             "health": health,
             "grafana_url": settings.grafana_url,
         },
@@ -113,9 +113,9 @@ async def connectivity_page(request: Request):
     connectivity = await api_client.get_connectivity()
 
     return templates.TemplateResponse(
+        request,
         "connectivity.html",
         {
-            "request": request,
             "connectivity": connectivity,
         },
     )

@@ -52,6 +52,17 @@ patches:
         path: /spec/ports/-
         value: {name: app, port: 8080, targetPort: 8080}
 
+  # Kubernetes gives each pod a <SERVICE>_PORT variable for every Service in its namespace. The
+  # adsb-sync Service's, ADSB_SYNC_PORT=tcp://<address>:9090, has the name of an api-server
+  # setting that must be a number, and the api-server exits. It finds its peers by DNS name.
+  - target:
+      kind: Deployment
+      name: api-server
+    patch: |-
+      - op: add
+        path: /spec/template/spec/enableServiceLinks
+        value: false
+
   # The manifests rely on a default StorageClass; this names the cluster's own.
   - target:
       kind: PersistentVolumeClaim

@@ -22,7 +22,7 @@ images:
   - name: planespotter-frontend
     newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/frontend
     newTag: latest
-    digest: sha256:561d8f8f740217e0e3adcd0138686c4c9634c58f8f488163a9031f574b113a2d # {"$imagepolicy": "planespotter-buildpacks:frontend:digest"}
+    digest: sha256:d5341841ef6596a508efc16170c708112e8953731185d769d371449926032020 # {"$imagepolicy": "planespotter-buildpacks:frontend:digest"}
   - name: planespotter-adsb-sync
     newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/adsb-sync
     newTag: latest

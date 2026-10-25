@@ -18,7 +18,7 @@ images:
   - name: planespotter-api
     newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/api-server
     newTag: latest
-    digest: sha256:0ce21b3276c28e70ce45cae63382a53ba37a1716d4ca9bda933ed85f23fba5c8 # {"$imagepolicy": "planespotter-buildpacks:api-server:digest"}
+    digest: sha256:adb1bda69ddcbe436890531a0b7cfe3698a2c66901fbf992465c3ce95c1d6a16 # {"$imagepolicy": "planespotter-buildpacks:api-server:digest"}
   - name: planespotter-frontend
     newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/frontend
     newTag: latest

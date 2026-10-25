@@ -1,0 +1,98 @@
+# Flux image automation. kpack pushes every build, rebuild or rebase, under :latest; each policy
+# follows the digest behind that tag, and the automation commits a new digest to the markers in
+# kustomization.yaml on this branch, which rolls the Deployment.
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: api-server
+spec:
+  image: ghcr.io/darrylcauldwell/planespotter-buildpacks/api-server
+  interval: 10m
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: api-server
+spec:
+  imageRepositoryRef:
+    name: api-server
+  filterTags:
+    pattern: '^latest$'
+  policy:
+    alphabetical: {}
+  digestReflectionPolicy: Always
+  interval: 1m
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: frontend
+spec:
+  image: ghcr.io/darrylcauldwell/planespotter-buildpacks/frontend
+  interval: 10m
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: frontend
+spec:
+  imageRepositoryRef:
+    name: frontend
+  filterTags:
+    pattern: '^latest$'
+  policy:
+    alphabetical: {}
+  digestReflectionPolicy: Always
+  interval: 1m
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: adsb-sync
+spec:
+  image: ghcr.io/darrylcauldwell/planespotter-buildpacks/adsb-sync
+  interval: 10m
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: adsb-sync
+spec:
+  imageRepositoryRef:
+    name: adsb-sync
+  filterTags:
+    pattern: '^latest$'
+  policy:
+    alphabetical: {}
+  digestReflectionPolicy: Always
+  interval: 1m
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: planespotter
+spec:
+  interval: 1m
+  sourceRef:
+    kind: GitRepository
+    name: planespotter
+    namespace: flux-system
+  git:
+    checkout:
+      ref:
+        branch: buildpacks
+    commit:
+      author:
+        name: fluxcdbot
+        email: fluxcdbot@users.noreply.github.com
+      messageTemplate: |
+        Roll to the images kpack pushed
+
+        {{ range .Changed.Changes -}}
+        {{ index (splitList ":" .Setter) 1 }}: {{ .OldValue }} -> {{ .NewValue }}
+        {{ end -}}
+    push:
+      branch: buildpacks
+  update:
+    path: ./buildpacks
+    strategy: Setters

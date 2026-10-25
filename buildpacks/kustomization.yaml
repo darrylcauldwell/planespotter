@@ -12,18 +12,23 @@ resources:
   # The api-server's status page checks adsb-sync at adsb-sync:9090, as docker-compose names
   # it; the manifests above give it no Service.
   - adsb-sync-service.yaml
+  - image-automation.yaml
 
-# kpack pushes each build as :latest.
+# kpack pushes each build as :latest. Flux image automation writes the digest of each new build
+# at its marker, so every rebuild and rebase reaches the Deployments as a commit to this branch.
 images:
   - name: planespotter-api
     newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/api-server
     newTag: latest
+    digest: sha256:bb39202003405ff0278ba36fe8bfd33b84d3bb45e67a130458aaa142079f2ba0 # {"$imagepolicy": "planespotter-buildpacks:api-server:digest"}
   - name: planespotter-frontend
     newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/frontend
     newTag: latest
+    digest: sha256:ec6cb2e2e1f1a82f5faf3ed47e0438bdf98a91b919dc82fa71bbc89f421fb9ed # {"$imagepolicy": "planespotter-buildpacks:frontend:digest"}
   - name: planespotter-adsb-sync
     newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/adsb-sync
     newTag: latest
+    digest: sha256:e0e1112ce83cd34f8763e9def4c05d05129c74d5de5a3478694cd246bb67c7c4 # {"$imagepolicy": "planespotter-buildpacks:adsb-sync:digest"}
   # The database stays the Dockerfile-built image: Postgres with data in it, not app code.
   - name: planespotter-db
     newName: ghcr.io/darrylcauldwell/planespotter/db-install
@@ -62,16 +67,6 @@ patches:
       - op: add
         path: /spec/template/spec/enableServiceLinks
         value: false
-
-  # kpack pushes every build under :latest, and a node that already holds :latest would otherwise
-  # start a restarted pod on its old copy.
-  - target:
-      kind: Deployment
-      name: (api-server|frontend|adsb-sync)
-    patch: |-
-      - op: replace
-        path: /spec/template/spec/containers/0/imagePullPolicy
-        value: Always
 
   # The manifests rely on a default StorageClass; this names the cluster's own.
   - target:

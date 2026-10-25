@@ -13,6 +13,7 @@ resources:
   - image-automation.yaml
 # kpack pushes each build as :latest. Flux image automation writes the digest of each new build
 # at its marker, so every rebuild and rebase reaches the Deployments as a commit to this branch.
+# Flux rewrites the file without blank lines when it commits, so it has none.
 images:
   - name: planespotter-api
     newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/api-server

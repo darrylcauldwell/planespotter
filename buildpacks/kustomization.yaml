@@ -26,7 +26,7 @@ images:
   - name: planespotter-adsb-sync
     newName: ghcr.io/darrylcauldwell/planespotter-buildpacks/adsb-sync
     newTag: latest
-    digest: sha256:3d5b5dd565c0fa0c367d6e9eb4495948831144e34b1550c3f9cf140a2a44949a # {"$imagepolicy": "planespotter-buildpacks:adsb-sync:digest"}
+    digest: sha256:d18f8a0b19b128bbce82ac627b8ed98a9bda2724d13d7689bd4564d4961211e6 # {"$imagepolicy": "planespotter-buildpacks:adsb-sync:digest"}
   # The database stays the Dockerfile-built image: Postgres with data in it, not app code.
   - name: planespotter-db
     newName: ghcr.io/darrylcauldwell/planespotter/db-install

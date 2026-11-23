@@ -9,6 +9,7 @@ from app.database import engine
 from app.metrics import SERVICE_UP, SERVICE_LATENCY, AIRCRAFT_TRACKED
 from app.services.redis_client import redis_client
 from app.routers.aircraft import router as aircraft_router
+from app.routers.ask import router as ask_router
 from app.routers.health import router as health_router
 
 logging.basicConfig(
@@ -64,6 +65,7 @@ app = FastAPI(
 
 app.include_router(health_router)
 app.include_router(aircraft_router, prefix="/api/v1")
+app.include_router(ask_router, prefix="/api/v1")
 
 Instrumentator().instrument(app).expose(app)
 

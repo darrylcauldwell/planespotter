@@ -1,4 +1,5 @@
 import logging
+import httpx
 from fastapi import APIRouter, Request, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -27,24 +28,43 @@ async def search(
     owner: str | None = Query(None),
     status: str | None = Query(None),
     page: int = Query(1, ge=1),
+    ask: str | None = Query(None),
 ):
     """Aircraft search page with results."""
     error = None
     results = None
-    has_search = any([registration, icao24, manufacturer, model, operator, owner, status])
+    understood = None
+    criteria = {
+        "registration": registration,
+        "icao24": icao24,
+        "manufacturer": manufacturer,
+        "model": model,
+        "operator": operator,
+        "owner": owner,
+        "status": status,
+    }
 
-    if has_search:
+    # A question replaces the form: the model fills in the filters, and the page shows them so
+    # the reader can see, and correct, what it understood.
+    if ask:
+        criteria = dict.fromkeys(criteria)
         try:
-            results = await api_client.search_aircraft(
-                registration=registration,
-                icao24=icao24,
-                manufacturer=manufacturer,
-                model=model,
-                operator=operator,
-                owner=owner,
-                status=status,
-                page=page,
+            understood = await api_client.ask(ask)
+            criteria |= {name: understood["filters"].get(name) for name in criteria}
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Ask failed: {e!r}")
+            error = (
+                "Ask Planespotter is switched off: no language model is configured"
+                if e.response.status_code == 503
+                else "The language model could not answer that question"
             )
+        except Exception as e:
+            logger.error(f"Ask failed: {e!r}")
+            error = "The language model could not answer that question"
+
+    if any(criteria.values()):
+        try:
+            results = await api_client.search_aircraft(**criteria, page=page)
         except Exception as e:
             logger.error(f"Search failed: {e}")
             error = "Failed to connect to API server"
@@ -55,14 +75,10 @@ async def search(
         {
             "results": results,
             "error": error,
-            "registration": registration or "",
-            "icao24": icao24 or "",
-            "manufacturer": manufacturer or "",
-            "model": model or "",
-            "operator": operator or "",
-            "owner": owner or "",
-            "status": status or "",
+            **{name: value or "" for name, value in criteria.items()},
             "page": page,
+            "ask": ask or "",
+            "understood": understood,
         },
     )
 

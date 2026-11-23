@@ -13,6 +13,33 @@
 
 <div class="card mb-4">
     <div class="card-header">
+        <i class="bi bi-stars mr-2"></i>Ask Planespotter
+    </div>
+    <div class="card-body">
+        <form method="get" action="/search" class="flex gap-2"
+              onsubmit="var b = this.querySelector('button'); b.disabled = true; b.innerHTML = '<i class=&quot;bi bi-hourglass-split mr-2&quot;></i>Thinking';">
+            <input type="text" class="form-control" id="ask" name="ask" value="{{ ask }}"
+                   aria-label="Ask in plain English" placeholder="e.g., Emirates A380s flying right now">
+            <button type="submit" class="btn btn-primary whitespace-nowrap">
+                <i class="bi bi-send mr-2"></i>Ask
+            </button>
+        </form>
+        {% if understood %}
+        <p class="mt-3 mb-0 text-sm text-[var(--ps-text-muted)]">
+            <code>{{ understood['model'] }}</code> read that as
+            {% for name, value in understood['filters'].items() if value %}
+            <span class="badge bg-secondary ml-1">{{ name }}: {{ value }}</span>
+            {% else %}
+            no filters
+            {% endfor %}
+            in {{ '%.1f' % (understood['elapsed_ms'] / 1000) }}s
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
         <i class="bi bi-funnel mr-2"></i>Search Filters
     </div>
     <div class="card-body">

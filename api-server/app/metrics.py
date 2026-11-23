@@ -14,3 +14,14 @@ SERVICE_LATENCY = Histogram(
 CACHE_HITS = Counter("planespotter_cache_hits_total", "Redis cache hits for position lookups")
 CACHE_MISSES = Counter("planespotter_cache_misses_total", "Redis cache misses for position lookups")
 AIRCRAFT_TRACKED = Gauge("planespotter_aircraft_tracked_total", "Aircraft positions currently in Redis")
+LLM_LATENCY = Histogram(
+    "planespotter_llm_request_seconds",
+    "Time the language model took to answer, by feature",
+    ["feature"],
+    buckets=(0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0),
+)
+LLM_TOKENS = Counter(
+    "planespotter_llm_tokens_total",
+    "Tokens the language model read (prompt) and wrote (completion), by feature",
+    ["feature", "kind"],
+)

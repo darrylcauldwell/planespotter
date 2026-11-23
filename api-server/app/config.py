@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_ttl: int = 60
 
+    # Language model: any server that speaks the OpenAI API (llama.cpp, Private AI Services,
+    # OpenAI). Unset, the AI endpoints answer 503 and everything else works as before.
+    llm_base_url: str | None = None
+    llm_model: str = "default"
+    llm_api_key: str | None = None
+    llm_timeout: float = 120.0
+
     # Service discovery (for health checks & connectivity)
     frontend_host: str = "frontend"
     adsb_sync_host: str = "adsb-sync"

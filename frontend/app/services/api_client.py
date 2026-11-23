@@ -53,6 +53,15 @@ class APIClient:
             response.raise_for_status()
             return response.json()
 
+    async def ask(self, question: str) -> dict:
+        """Turn a plain-English question into search filters."""
+        async with httpx.AsyncClient(timeout=settings.ask_timeout) as client:
+            response = await client.post(
+                f"{self.base_url}/api/v1/ask", json={"question": question}
+            )
+            response.raise_for_status()
+            return response.json()
+
     async def get_health(self) -> dict | None:
         """Get system health status."""
         try:

@@ -3,6 +3,8 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 import json
 
+from sqlalchemy.dialects import postgresql
+
 from app.services.aircraft import AircraftService
 
 
@@ -26,6 +28,42 @@ class TestAircraftServiceSearch:
         assert len(results) == 2
         assert total == 2
         assert mock_db_session.execute.called
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("airborne, operator", [(True, "= ANY ("), (False, "!= ALL (")])
+    async def test_search_by_airborne_status(self, mock_db_session, sample_aircraft, airborne, operator):
+        """Test the status filter is one array comparison against every tracked aircraft."""
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = [sample_aircraft]
+        mock_result.scalars.return_value = mock_scalars
+
+        mock_db_session.execute = AsyncMock(return_value=mock_result)
+        mock_db_session.scalar = AsyncMock(return_value=1)
+
+        service = AircraftService(mock_db_session)
+        await service.search(airborne=airborne, tracked={"abc123", "def456"})
+
+        compiled = mock_db_session.execute.call_args.args[0].compile(dialect=postgresql.dialect())
+        assert operator in str(compiled)
+        assert sorted(compiled.params["tracked"]) == ["abc123", "def456"]
+
+    @pytest.mark.asyncio
+    async def test_search_without_status_has_no_tracked_filter(self, mock_db_session, sample_aircraft):
+        """Test no status means no comparison against tracked aircraft."""
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = [sample_aircraft]
+        mock_result.scalars.return_value = mock_scalars
+
+        mock_db_session.execute = AsyncMock(return_value=mock_result)
+        mock_db_session.scalar = AsyncMock(return_value=1)
+
+        service = AircraftService(mock_db_session)
+        await service.search(model="737")
+
+        compiled = mock_db_session.execute.call_args.args[0].compile(dialect=postgresql.dialect())
+        assert "tracked" not in compiled.params
 
     @pytest.mark.asyncio
     async def test_search_with_registration_filter(self, mock_db_session, sample_aircraft):

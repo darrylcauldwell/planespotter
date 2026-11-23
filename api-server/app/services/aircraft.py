@@ -1,5 +1,7 @@
+from collections.abc import Collection
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import Text, all_, any_, bindparam, select, func
+from sqlalchemy.dialects.postgresql import ARRAY
 from app.models.aircraft import AircraftMetadata
 from app.schemas.aircraft import AircraftPosition, AircraftWithPosition
 from app.services.redis_client import redis_client
@@ -19,10 +21,15 @@ class AircraftService:
         model: str | None = None,
         operator: str | None = None,
         owner: str | None = None,
+        airborne: bool | None = None,
+        tracked: Collection[str] = (),
         page: int = 1,
         per_page: int = 20,
     ) -> tuple[list[AircraftMetadata], int]:
-        """Search aircraft with pagination."""
+        """Search aircraft with pagination.
+
+        `airborne` keeps only aircraft in `tracked` (True) or only those not in it (False).
+        """
         query = select(AircraftMetadata)
 
         # Apply filters
@@ -42,6 +49,14 @@ class AircraftService:
             query = query.where(AircraftMetadata.operator.ilike(f"%{operator}%"))
         if owner:
             query = query.where(AircraftMetadata.owner.ilike(f"%{owner}%"))
+        if airborne is not None:
+            # One array parameter, not one parameter per aircraft: worldwide traffic can pass
+            # asyncpg's limit of 32,767 parameters.
+            tracked_param = bindparam("tracked", value=list(tracked), type_=ARRAY(Text))
+            if airborne:
+                query = query.where(AircraftMetadata.icao24 == any_(tracked_param))
+            else:
+                query = query.where(AircraftMetadata.icao24 != all_(tracked_param))
 
         # Get total count
         count_query = select(func.count()).select_from(query.subquery())

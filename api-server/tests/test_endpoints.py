@@ -1,6 +1,7 @@
 """Tests for API endpoints."""
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
+from sqlalchemy.dialects import postgresql
 
 
 class TestRootEndpoint:
@@ -159,7 +160,7 @@ class TestAircraftSearchEndpoint:
         assert data["total"] == 0
 
     def test_search_with_status_filter_airborne(self, client, mock_db_session, sample_aircraft, mock_redis_client):
-        """Test search with airborne status filter."""
+        """Test the airborne filter is applied in the database against every tracked aircraft."""
         mock_result = MagicMock()
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = [sample_aircraft]
@@ -167,14 +168,54 @@ class TestAircraftSearchEndpoint:
 
         mock_db_session.execute = AsyncMock(return_value=mock_result)
         mock_db_session.scalar = AsyncMock(return_value=1)
+        mock_redis_client.tracked_icao24s.return_value = ["abc123", "fff000"]
+        mock_redis_client.airborne_among.return_value = {"abc123"}
 
-        # Mock redis to show aircraft is airborne
-        mock_redis_client.exists.return_value = 1
-
-        with patch("app.routers.aircraft.redis_client", mock_redis_client):
-            response = client.get("/api/v1/aircraft?status=airborne")
+        response = client.get("/api/v1/aircraft?status=airborne")
 
         assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert data["items"][0]["is_airborne"] is True
+        sql = str(mock_db_session.execute.call_args.args[0].compile(dialect=postgresql.dialect()))
+        assert "= ANY (" in sql
+
+    def test_search_with_status_filter_ground(self, client, mock_db_session, sample_aircraft, mock_redis_client):
+        """Test the ground filter excludes every tracked aircraft in the database."""
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = [sample_aircraft]
+        mock_result.scalars.return_value = mock_scalars
+
+        mock_db_session.execute = AsyncMock(return_value=mock_result)
+        mock_db_session.scalar = AsyncMock(return_value=1)
+        mock_redis_client.tracked_icao24s.return_value = ["fff000"]
+        mock_redis_client.airborne_among.return_value = set()
+
+        response = client.get("/api/v1/aircraft?status=ground")
+
+        assert response.status_code == 200
+        assert response.json()["items"][0]["is_airborne"] is False
+        sql = str(mock_db_session.execute.call_args.args[0].compile(dialect=postgresql.dialect()))
+        assert "!= ALL (" in sql
+
+    def test_search_without_status_skips_the_tracked_scan(self, client, mock_db_session, sample_aircraft, mock_redis_client):
+        """Test a search without a status filter never reads every tracked aircraft."""
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = [sample_aircraft]
+        mock_result.scalars.return_value = mock_scalars
+
+        mock_db_session.execute = AsyncMock(return_value=mock_result)
+        mock_db_session.scalar = AsyncMock(return_value=1)
+        mock_redis_client.airborne_among.return_value = {"abc123"}
+
+        response = client.get("/api/v1/aircraft?manufacturer=Boeing&status=unknown")
+
+        assert response.status_code == 200
+        assert response.json()["items"][0]["is_airborne"] is True
+        mock_redis_client.tracked_icao24s.assert_not_called()
+        mock_redis_client.airborne_among.assert_called_once_with(["abc123"])
 
 
 class TestAircraftDetailEndpoint:

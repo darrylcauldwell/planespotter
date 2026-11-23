@@ -87,46 +87,63 @@ class TestRedisClientGetAircraftPosition:
         mock_redis_instance.get.assert_called_once_with("aircraft:abc123")
 
 
-class TestRedisClientIsAirborne:
-    """Tests for RedisClient.is_airborne() method."""
+class TestRedisClientAirborneAmong:
+    """Tests for RedisClient.airborne_among() method."""
 
     @pytest.mark.asyncio
-    async def test_is_airborne_true(self):
-        """Test is_airborne returns True when key exists."""
+    async def test_returns_only_tracked_aircraft(self):
+        """Test aircraft with a position are returned and the rest are not."""
         client = RedisClient()
         mock_redis_instance = AsyncMock()
-        mock_redis_instance.exists.return_value = 1
+        mock_redis_instance.mget.return_value = ['{"icao24": "abc123"}', None]
         client._client = mock_redis_instance
 
-        result = await client.is_airborne("abc123")
+        result = await client.airborne_among(["abc123", "def456"])
 
-        assert result is True
-        mock_redis_instance.exists.assert_called_once_with("aircraft:abc123")
+        assert result == {"abc123"}
 
     @pytest.mark.asyncio
-    async def test_is_airborne_false(self):
-        """Test is_airborne returns False when key doesn't exist."""
+    async def test_one_round_trip_with_lowercase_keys(self):
+        """Test every aircraft is looked up in a single MGET, by lowercase key."""
         client = RedisClient()
         mock_redis_instance = AsyncMock()
-        mock_redis_instance.exists.return_value = 0
+        mock_redis_instance.mget.return_value = [None, None]
         client._client = mock_redis_instance
 
-        result = await client.is_airborne("nonexistent")
+        await client.airborne_among(["ABC123", "def456"])
 
-        assert result is False
+        mock_redis_instance.mget.assert_called_once_with(["aircraft:abc123", "aircraft:def456"])
 
     @pytest.mark.asyncio
-    async def test_is_airborne_lowercase_conversion(self):
-        """Test that icao24 is converted to lowercase."""
+    async def test_empty_page_skips_valkey(self):
+        """Test an empty list needs no round trip."""
         client = RedisClient()
         mock_redis_instance = AsyncMock()
-        mock_redis_instance.exists.return_value = 1
         client._client = mock_redis_instance
 
-        await client.is_airborne("ABC123")
+        assert await client.airborne_among([]) == set()
+        mock_redis_instance.mget.assert_not_called()
 
-        # Should query with lowercase
-        mock_redis_instance.exists.assert_called_once_with("aircraft:abc123")
+
+class TestRedisClientTrackedIcao24s:
+    """Tests for RedisClient.tracked_icao24s() method."""
+
+    @pytest.mark.asyncio
+    async def test_lists_tracked_aircraft_with_scan(self):
+        """Test every aircraft key is read with SCAN and returned without its prefix."""
+        async def keys():
+            for key in ["aircraft:abc123", "aircraft:def456"]:
+                yield key
+
+        client = RedisClient()
+        mock_redis_instance = MagicMock()
+        mock_redis_instance.scan_iter.return_value = keys()
+        client._client = mock_redis_instance
+
+        result = await client.tracked_icao24s()
+
+        assert result == ["abc123", "def456"]
+        assert mock_redis_instance.scan_iter.call_args.kwargs["match"] == "aircraft:*"
 
 
 class TestRedisClientPing:

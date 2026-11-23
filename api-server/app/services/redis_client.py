@@ -32,9 +32,21 @@ class RedisClient:
         CACHE_MISSES.inc()
         return None
 
-    async def is_airborne(self, icao24: str) -> bool:
-        """Check if aircraft is currently tracked."""
-        return await self._client.exists(f"aircraft:{icao24.lower()}") > 0
+    async def airborne_among(self, icao24s: list[str]) -> set[str]:
+        """Which of these aircraft are currently tracked, in one round trip."""
+        if not icao24s:
+            return set()
+        positions = await self._client.mget([f"aircraft:{icao24.lower()}" for icao24 in icao24s])
+        return {icao24 for icao24, position in zip(icao24s, positions) if position is not None}
+
+    async def tracked_icao24s(self) -> list[str]:
+        """ICAO24 addresses of every aircraft currently tracked."""
+        # SCAN rather than KEYS: KEYS blocks Valkey while it walks every key, stalling the
+        # position writes from adsb-sync.
+        return [
+            key.removeprefix("aircraft:")
+            async for key in self._client.scan_iter(match="aircraft:*", count=1000)
+        ]
 
     async def get_tracked_count(self) -> int:
         """Return the number of aircraft keys currently in Redis."""

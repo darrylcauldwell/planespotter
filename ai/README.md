@@ -36,13 +36,19 @@ URL, so the same images run against docker-compose's Postgres and llama.cpp on a
 Each service builds from its Dockerfile. The lab's nodes are x86, so build for `linux/amd64`:
 
 ```bash
+commit=$(git rev-parse --short HEAD)
 for service in api-server frontend adsb-sync db-install; do
   docker buildx build --platform linux/amd64 --push \
-    -t ghcr.io/darrylcauldwell/planespotter-ai/$service:latest ./$service
+    -t ghcr.io/darrylcauldwell/planespotter-ai/$service:latest \
+    -t ghcr.io/darrylcauldwell/planespotter-ai/$service:$commit ./$service
+  docker buildx imagetools inspect ghcr.io/darrylcauldwell/planespotter-ai/$service:$commit | grep ^Digest
 done
 ```
 
-Make the four packages public on GitHub, and the cluster pulls them without a registry Secret.
+Put the four digests in [kustomization.yaml](kustomization.yaml): the overlay pins each image by
+digest, so the cluster runs what was built and tested rather than whatever `:latest` is when a
+pod starts. Make the four packages public on GitHub, and the cluster pulls them without a
+registry Secret.
 
 ## Point it at the services
 
@@ -104,10 +110,10 @@ instructions and examples, which takes several times longer than every request a
 
 ## Upgrade
 
-Build and push again, then restart the Deployments to pull the new `:latest`:
+Build and push again, put the new digests in `kustomization.yaml`, and apply it:
 
 ```bash
-kubectl -n planespotter-ai rollout restart deployment api-server frontend adsb-sync
+kubectl apply -k ai/
 ```
 
 ## Change the model or where it runs

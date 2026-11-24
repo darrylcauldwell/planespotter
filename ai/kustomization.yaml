@@ -11,21 +11,22 @@ resources:
   # it; the manifests above give it no Service.
   - adsb-sync-service.yaml
   - db-seed.yaml
-# Built from each service's Dockerfile on the ai branch; ai/README.md has the build.
+# Built from each service's Dockerfile on the ai branch, and pinned by digest so the cluster runs
+# exactly the images that were tested. ai/README.md has the build.
 images:
   - name: planespotter-api
     newName: ghcr.io/darrylcauldwell/planespotter-ai/api-server
-    newTag: latest
+    digest: sha256:4d1759157d98a43a3a253ce0f116406cdb69c7f5db19c361953f385a140a4c9a
   - name: planespotter-frontend
     newName: ghcr.io/darrylcauldwell/planespotter-ai/frontend
-    newTag: latest
+    digest: sha256:3e02a33209d8c56fdcb7aae58c248f9d020b40c9e2e3fc814ddfcaeaf9ff05e8
   - name: planespotter-adsb-sync
     newName: ghcr.io/darrylcauldwell/planespotter-ai/adsb-sync
-    newTag: latest
+    digest: sha256:e253e04eb393f9e9849081621465ba59a032454deb5e844d830e5ec226550d59
   # Postgres with the aircraft data and its import script; here only the seed job runs it.
   - name: planespotter-db
     newName: ghcr.io/darrylcauldwell/planespotter-ai/db-install
-    newTag: latest
+    digest: sha256:a1803d1d5a243052036ec221df6722bfe6e49e696d3c5a42a370b5f0b43f9eab
 patches:
   - path: services.yaml
     target: {kind: ConfigMap, name: api-server-config}
@@ -94,15 +95,6 @@ patches:
       - op: add
         path: /spec/ports/-
         value: {name: app, port: 8080, targetPort: 8080}
-  # Every build is pushed under :latest, and a node that already holds :latest would otherwise
-  # start a restarted pod on its old copy.
-  - target:
-      kind: Deployment
-      name: (api-server|frontend|adsb-sync)
-    patch: |-
-      - op: replace
-        path: /spec/template/spec/containers/0/imagePullPolicy
-        value: Always
   # Anonymous OpenSky access is rate limited, and the upstream 30-second poll exhausts it: the
   # positions then expire and every "flying now" question finds nothing. These are
   # docker-compose's values, chosen for the same reason; a position can be 35 minutes old.

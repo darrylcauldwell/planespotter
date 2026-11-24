@@ -72,6 +72,13 @@ class TestAircraftFacts:
         assert "Vertical: climbing at 1,000 feet per minute" in aircraft_facts(_aircraft(_position(vertical_rate=5.08)), TODAY)
         assert "Vertical: descending at 1,000 feet per minute" in aircraft_facts(_aircraft(_position(vertical_rate=-5.08)), TODAY)
 
+    def test_impossible_speed_is_left_out(self):
+        """Test a bad decode's ground speed is not offered to the model, and the rest still is."""
+        facts = aircraft_facts(_aircraft(_position(velocity=2103.26)), TODAY)
+
+        assert "Ground speed" not in facts
+        assert "Altitude: 35,000 feet" in facts
+
     def test_age_is_worked_out(self):
         """Test the year built carries the aircraft's age, from a date or a bare year."""
         assert "Built: 2006 (about 20 years ago)" in aircraft_facts(_aircraft(), TODAY)

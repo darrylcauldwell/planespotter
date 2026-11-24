@@ -14,6 +14,10 @@ FEET_PER_METRE = 3.28084
 KNOTS_PER_METRE_PER_SECOND = 1.94384
 # Below this vertical rate (about 200 feet per minute) an aircraft is treated as level.
 LEVEL_METRES_PER_SECOND = 1.0
+# About 780 knots, beyond any airliner even in the strongest jet stream. OpenSky passes on a
+# few bad decodes of over 1,000 knots in every poll, and the model repeats whatever it is given,
+# so a speed above this is left out rather than described.
+MAX_PLAUSIBLE_METRES_PER_SECOND = 400.0
 
 
 def compass(degrees: float) -> str:
@@ -58,7 +62,7 @@ def aircraft_facts(aircraft: AircraftWithPosition, today: date) -> str:
         else:
             if position.baro_altitude is not None:
                 facts["Altitude"] = f"{position.baro_altitude * FEET_PER_METRE:,.0f} feet"
-            if position.velocity is not None:
+            if position.velocity is not None and position.velocity <= MAX_PLAUSIBLE_METRES_PER_SECOND:
                 facts["Ground speed"] = f"{position.velocity * KNOTS_PER_METRE_PER_SECOND:,.0f} knots"
             if position.true_track is not None:
                 facts["Heading"] = compass(position.true_track)

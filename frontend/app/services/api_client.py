@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 import httpx
 from app.config import settings
 
@@ -55,12 +56,22 @@ class APIClient:
 
     async def ask(self, question: str) -> dict:
         """Turn a plain-English question into search filters."""
-        async with httpx.AsyncClient(timeout=settings.ask_timeout) as client:
+        async with httpx.AsyncClient(timeout=settings.ai_timeout) as client:
             response = await client.post(
                 f"{self.base_url}/api/v1/ask", json={"question": question}
             )
             response.raise_for_status()
             return response.json()
+
+    async def story(self, icao24: str) -> AsyncIterator[str]:
+        """Stream the API server's description of an aircraft as it is written."""
+        async with httpx.AsyncClient(timeout=settings.ai_timeout) as client:
+            async with client.stream(
+                "GET", f"{self.base_url}/api/v1/aircraft/{icao24}/story"
+            ) as response:
+                response.raise_for_status()
+                async for text in response.aiter_text():
+                    yield text
 
     async def get_health(self) -> dict | None:
         """Get system health status."""

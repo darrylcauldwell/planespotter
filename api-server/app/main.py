@@ -11,6 +11,7 @@ from app.services.redis_client import redis_client
 from app.routers.aircraft import router as aircraft_router
 from app.routers.ask import router as ask_router
 from app.routers.health import router as health_router
+from app.routers.story import router as story_router
 
 logging.basicConfig(
     level=getattr(logging, settings.log_level),
@@ -66,6 +67,7 @@ app = FastAPI(
 app.include_router(health_router)
 app.include_router(aircraft_router, prefix="/api/v1")
 app.include_router(ask_router, prefix="/api/v1")
+app.include_router(story_router, prefix="/api/v1")
 
 Instrumentator().instrument(app).expose(app)
 

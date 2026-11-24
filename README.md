@@ -67,6 +67,7 @@ kubectl get pods -n planespotter
 | GET | `/api/v1/aircraft` | Search aircraft with pagination |
 | GET | `/api/v1/aircraft/{icao24}` | Get aircraft details with live position |
 | POST | `/api/v1/ask` | Turn a plain-English question into search filters (needs a language model; 503 without one) |
+| GET | `/api/v1/aircraft/{icao24}/story` | Stream a short plain-English description of an aircraft as text (needs a language model; 503 without one) |
 | GET | `/health` | Liveness probe |
 | GET | `/health/ready` | Readiness probe |
 | GET | `/api/v1/health` | Detailed health status |
@@ -85,7 +86,7 @@ kubectl get pods -n planespotter
 | DATABASE_PASSWORD | postgres | Database password |
 | REDIS_HOST | localhost | Redis host |
 | REDIS_PORT | 6379 | Redis port |
-| LLM_BASE_URL | *(unset)* | Base URL of any OpenAI-compatible server, e.g. `http://llm:8080/v1` for llama.cpp. Unset turns Ask Planespotter off |
+| LLM_BASE_URL | *(unset)* | Base URL of any OpenAI-compatible server, e.g. `http://llm:8080/v1` for llama.cpp. Unset turns the AI features off |
 | LLM_MODEL | default | Model name sent with each request; llama.cpp ignores it, Private AI Services and OpenAI route by it |
 | LLM_API_KEY | *(unset)* | Bearer token, for servers that need one |
 | LLM_TIMEOUT | 120 | Seconds to wait for the model |
@@ -94,7 +95,7 @@ kubectl get pods -n planespotter
 | Variable | Default | Description |
 |----------|---------|-------------|
 | API_SERVER_URL | http://localhost:8000 | API server URL |
-| ASK_TIMEOUT | 150 | Seconds to wait for Ask Planespotter; keep it above the API server's `LLM_TIMEOUT` |
+| AI_TIMEOUT | 150 | Seconds to wait for the AI features; keep it above the API server's `LLM_TIMEOUT` |
 
 **ADSB-Sync:**
 | Variable | Default | Description |

@@ -1,7 +1,7 @@
 import logging
 import httpx
 from fastapi import APIRouter, Request, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from app.config import settings
 from app.services.api_client import api_client
@@ -9,6 +9,8 @@ from app.services.api_client import api_client
 logger = logging.getLogger(__name__)
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+
+MODEL_OFF = "The AI features are switched off: no language model is configured"
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -54,7 +56,7 @@ async def search(
         except httpx.HTTPStatusError as e:
             logger.error(f"Ask failed: {e!r}")
             error = (
-                "Ask Planespotter is switched off: no language model is configured"
+                MODEL_OFF
                 if e.response.status_code == 503
                 else "The language model could not answer that question"
             )
@@ -81,6 +83,34 @@ async def search(
             "understood": understood,
         },
     )
+
+
+@router.get("/aircraft/{icao24}/story")
+async def aircraft_story(icao24: str):
+    """Pass the API server's streamed description of an aircraft through to the browser."""
+    failed = "The language model could not describe this aircraft"
+    pieces = api_client.story(icao24)
+    # Wait for the first words before answering, so the page can tell a missing or failing
+    # model from a slow one by the status code.
+    try:
+        first = await anext(pieces, "")
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Story failed: {e!r}")
+        status = e.response.status_code
+        return PlainTextResponse({404: "Aircraft not found", 503: MODEL_OFF}.get(status, failed), status_code=status)
+    except Exception as e:
+        logger.error(f"Story failed: {e!r}")
+        return PlainTextResponse(failed, status_code=502)
+
+    async def story():
+        yield first
+        try:
+            async for piece in pieces:
+                yield piece
+        except Exception as e:
+            logger.error(f"Story stopped part way: {e!r}")
+
+    return StreamingResponse(story(), media_type="text/plain; charset=utf-8")
 
 
 @router.get("/aircraft/{icao24}", response_class=HTMLResponse)

@@ -49,6 +49,57 @@
     </div>
 </div>
 
+<div class="card mb-4">
+    <div class="card-header flex justify-between items-center">
+        <span><i class="bi bi-stars mr-2"></i>About this aircraft</span>
+        <button type="button" id="story-button" class="btn btn-primary">
+            <i class="bi bi-chat-text mr-2"></i>Tell me about it
+        </button>
+    </div>
+    <div class="card-body">
+        <p id="story" class="mb-0" aria-live="polite"></p>
+        <p id="story-timing" class="mt-2 mb-0 text-sm text-[var(--ps-text-muted)]"></p>
+    </div>
+</div>
+
+<script>
+    document.getElementById('story-button').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        const story = document.getElementById('story');
+        const timing = document.getElementById('story-timing');
+        const seconds = (from, to) => ((to - from) / 1000).toFixed(1);
+        button.disabled = true;
+        story.textContent = '';
+        timing.textContent = 'Thinking…';
+        const start = performance.now();
+        let firstWords = null;
+        try {
+            const response = await fetch('/aircraft/' + encodeURIComponent({{ aircraft['icao24'] | tojson }}) + '/story');
+            if (!response.ok) {
+                story.textContent = await response.text();
+                timing.textContent = '';
+                return;
+            }
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            for (;;) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                firstWords ??= performance.now();
+                story.textContent += decoder.decode(value, { stream: true });
+                timing.textContent = 'First words after ' + seconds(start, firstWords) + 's';
+            }
+            timing.textContent = 'First words after ' + seconds(start, firstWords ?? performance.now()) +
+                's, finished after ' + seconds(start, performance.now()) + 's';
+        } catch (error) {
+            story.textContent = 'The language model could not describe this aircraft.';
+            timing.textContent = '';
+        } finally {
+            button.disabled = false;
+        }
+    });
+</script>
+
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Live Position Card -->
     <div>

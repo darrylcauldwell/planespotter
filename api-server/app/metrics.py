@@ -20,6 +20,12 @@ LLM_LATENCY = Histogram(
     ["feature"],
     buckets=(0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0),
 )
+LLM_FIRST_TOKEN = Histogram(
+    "planespotter_llm_first_token_seconds",
+    "Time until the language model's first words when streaming, by feature",
+    ["feature"],
+    buckets=(0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 60.0),
+)
 LLM_TOKENS = Counter(
     "planespotter_llm_tokens_total",
     "Tokens the language model read (prompt) and wrote (completion), by feature",

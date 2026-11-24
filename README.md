@@ -92,6 +92,7 @@ kubectl get pods -n planespotter
 | DATABASE_NAME | postgres | Database name |
 | DATABASE_USER | postgres | Database user |
 | DATABASE_PASSWORD | postgres | Database password |
+| DATABASE_SSL_ROOT_CERT | *(unset)* | Path to the CA certificate that signed the database's certificate. Set, the connection uses TLS and checks the certificate against it but not its hostname (`verify-ca`, which is what Data Services Manager supports); unset, it is plain |
 | REDIS_HOST | localhost | Redis host |
 | REDIS_PORT | 6379 | Redis port |
 | LLM_BASE_URL | *(unset)* | Base URL of any OpenAI-compatible server, e.g. `http://llm:8080/v1` for llama.cpp. Unset turns the AI features off |

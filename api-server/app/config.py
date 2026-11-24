@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     database_name: str = "postgres"
     database_user: str = "postgres"
     database_password: str = "postgres"
+    # The CA certificate that signed the database server's certificate. Set, the connection uses
+    # TLS and checks the server against it; unset, the connection is plain.
+    database_ssl_root_cert: str | None = None
 
     # Redis
     redis_host: str = "localhost"

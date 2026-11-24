@@ -1,0 +1,85 @@
+# Loads the OpenSky aircraft data into the Data Services Manager database, which starts empty.
+# The image is the Dockerfile-built Postgres, used only for the data file and import script it
+# carries. A second run finds the table full and does nothing.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-seed
+  labels:
+    app: db-seed
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: db-seed
+    spec:
+      restartPolicy: Never
+      securityContext:
+        # The postgres user the image creates.
+        runAsUser: 999
+        runAsGroup: 999
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: seed
+          image: planespotter-db
+          command:
+            - sh
+            - -c
+            - psql -v ON_ERROR_STOP=1 -q -f /docker-entrypoint-initdb.d/01-init.sql && python3 /import.py
+          # libpq's own variables, which psql and the import script both read. verify-ca because
+          # DSM does not support verify-full.
+          env:
+            - name: PGHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: api-server-config
+                  key: DATABASE_HOST
+            - name: PGPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: api-server-config
+                  key: DATABASE_PORT
+            - name: PGDATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: api-server-config
+                  key: DATABASE_NAME
+            - name: PGUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: api-server-config
+                  key: DATABASE_USER
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: planespotter-db
+                  key: password
+            - name: PGSSLMODE
+              value: verify-ca
+            - name: PGSSLROOTCERT
+              value: /etc/planespotter/db/ca.crt
+          # The import holds the whole CSV in memory: 590 MiB at its peak in a local run.
+          resources:
+            requests:
+              cpu: 500m
+              memory: 768Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: db-ca
+              mountPath: /etc/planespotter/db
+              readOnly: true
+      volumes:
+        - name: db-ca
+          secret:
+            secretName: planespotter-db
+            items:
+              - key: ca.crt
+                path: ca.crt

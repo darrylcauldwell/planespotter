@@ -1,0 +1,59 @@
+# The api-server's credentials for the platform services. Both Secrets are created in this
+# namespace outside git (ai/README.md): planespotter-db holds the database password and the CA
+# that signed the database's certificate, pais the model endpoint's API token and the CA that
+# signed its certificate.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-server
+spec:
+  template:
+    spec:
+      # Kubernetes gives each pod a <SERVICE>_PORT variable for every Service in its namespace.
+      # The adsb-sync Service's, ADSB_SYNC_PORT=tcp://<address>:9090, has the name of an
+      # api-server setting that must be a number, and the api-server exits. It finds its peers
+      # by DNS name.
+      enableServiceLinks: false
+      containers:
+        - name: api-server
+          # Replaces the manifests' list, which also read the deleted api-server-secret.
+          envFrom:
+            - configMapRef:
+                name: api-server-config
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: planespotter-db
+                  key: password
+            - name: DATABASE_SSL_ROOT_CERT
+              value: /etc/planespotter/db/ca.crt
+            - name: LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: pais
+                  key: token
+            # httpx then trusts this file instead of its own bundle. The model endpoint is the
+            # api-server's only HTTPS peer, so nothing else loses a CA it needed.
+            - name: SSL_CERT_FILE
+              value: /etc/planespotter/pais/ca.crt
+          volumeMounts:
+            - name: db-ca
+              mountPath: /etc/planespotter/db
+              readOnly: true
+            - name: pais-ca
+              mountPath: /etc/planespotter/pais
+              readOnly: true
+      volumes:
+        - name: db-ca
+          secret:
+            secretName: planespotter-db
+            items:
+              - key: ca.crt
+                path: ca.crt
+        - name: pais-ca
+          secret:
+            secretName: pais
+            items:
+              - key: ca.crt
+                path: ca.crt

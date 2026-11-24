@@ -1,0 +1,18 @@
+# Where the platform services are. DATABASE_HOST and LLM_BASE_URL exist only once Data Services
+# Manager and Private AI Services have provisioned the database and the model endpoint;
+# ai/README.md says where to read each one.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-server-config
+data:
+  # The PostgresCluster's status.connection.host and .port.
+  DATABASE_HOST: ""
+  DATABASE_PORT: "5432"
+  # The PostgresCluster's databaseName and adminUsername; pgadmin is DSM's default admin.
+  DATABASE_NAME: planespotter
+  DATABASE_USER: pgadmin
+  # https://<Private AI Services address>/api/v1/compatibility/openai/v1
+  LLM_BASE_URL: ""
+  # The model endpoint's routing name, which Private AI Services routes requests by.
+  LLM_MODEL: qwen3-4b

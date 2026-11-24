@@ -42,8 +42,8 @@ The first start also fetches the 2.5 GB model behind the AI features into the `l
 volume; later starts reuse it. The model runs on processor cores and needs about 5 GB of the
 Docker VM's memory.
 
-For the AI features on VKS, with images built by Cloud Native Buildpacks, see
-[ai/README.md](ai/README.md).
+For the AI features on VCF, with the app on VKS, the model on Private AI Services and the
+database on Data Services Manager, see [ai/README.md](ai/README.md).
 
 ### Kubernetes Deployment
 

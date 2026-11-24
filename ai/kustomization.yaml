@@ -1,23 +1,17 @@
-# Planespotter with its AI features, built by Cloud Native Buildpacks from the ai branch: the
-# kpack Images that build it, the app deployed from what they build, and the llama.cpp server
-# that answers its questions, in a namespace of its own beside the buildpacks deployment.
+# Planespotter with its AI features on VKS. The app runs here; its language model is a Private AI
+# Services model endpoint and its database a Data Services Manager PostgreSQL, so this namespace
+# holds no model server and no database, only the app that uses them. It sits beside the
+# buildpacks deployment, in a namespace of its own.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: planespotter-ai
 resources:
   - ../kubernetes
-  - images.yaml
-  - serviceaccounts.yaml
   # The api-server's status page checks adsb-sync at adsb-sync:9090, as docker-compose names
   # it; the manifests above give it no Service.
   - adsb-sync-service.yaml
-  - llm.yaml
-configMapGenerator:
-  - name: llm-fetch-model
-    files:
-      - fetch-model.sh
-# kpack pushes each build as :latest, and the Deployments always pull it (patch below). Digest
-# pinning by Flux image automation, as the buildpacks overlay has, needs a first build to pin.
+  - db-seed.yaml
+# Built from each service's Dockerfile on the ai branch; ai/README.md has the build.
 images:
   - name: planespotter-api
     newName: ghcr.io/darrylcauldwell/planespotter-ai/api-server
@@ -28,11 +22,59 @@ images:
   - name: planespotter-adsb-sync
     newName: ghcr.io/darrylcauldwell/planespotter-ai/adsb-sync
     newTag: latest
-  # The database stays the Dockerfile-built image: Postgres with data in it, not app code.
+  # Postgres with the aircraft data and its import script; here only the seed job runs it.
   - name: planespotter-db
-    newName: ghcr.io/darrylcauldwell/planespotter/db-install
-    digest: sha256:97ea1dc5d9a1c1132301e88ed2bd107f24b23ac0cadf8c2ae8b05e91b3c0d6a8
+    newName: ghcr.io/darrylcauldwell/planespotter-ai/db-install
+    newTag: latest
 patches:
+  - path: services.yaml
+    target: {kind: ConfigMap, name: api-server-config}
+  - path: api-server.yaml
+    target: {kind: Deployment, name: api-server}
+  # The database is Data Services Manager's. The manifests' own Postgres goes, with its volume
+  # and settings, and so does api-server-secret: a database password kept in git.
+  - target: {kind: Deployment, name: postgres}
+    patch: |-
+      $patch: delete
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: postgres
+  - target: {kind: Service, name: postgres}
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: postgres
+  - target: {kind: PersistentVolumeClaim, name: postgres-pvc}
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: postgres-pvc
+  - target: {kind: ConfigMap, name: postgres-config}
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: postgres-config
+  - target: {kind: Secret, name: postgres-secret}
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: postgres-secret
+  - target: {kind: Secret, name: api-server-secret}
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: api-server-secret
   # No ingress controller. The frontend stays a ClusterIP Service, reached with kubectl
   # port-forward: the lab has no LoadBalancer address to spare. The status page checks the
   # frontend at frontend:8080, docker-compose's port, so the Service offers it beside 80.
@@ -52,7 +94,7 @@ patches:
       - op: add
         path: /spec/ports/-
         value: {name: app, port: 8080, targetPort: 8080}
-  # kpack pushes every build under :latest, and a node that already holds :latest would otherwise
+  # Every build is pushed under :latest, and a node that already holds :latest would otherwise
   # start a restarted pod on its old copy.
   - target:
       kind: Deployment
@@ -61,23 +103,6 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always
-  # Kubernetes gives each pod a <SERVICE>_PORT variable for every Service in its namespace. The
-  # adsb-sync Service's, ADSB_SYNC_PORT=tcp://<address>:9090, has the name of an api-server
-  # setting that must be a number, and the api-server exits. It finds its peers by DNS name.
-  - target:
-      kind: Deployment
-      name: api-server
-    patch: |-
-      - op: add
-        path: /spec/template/spec/enableServiceLinks
-        value: false
-  - target:
-      kind: ConfigMap
-      name: api-server-config
-    patch: |-
-      - op: add
-        path: /data/LLM_BASE_URL
-        value: http://llm:8080/v1
   # Anonymous OpenSky access is rate limited, and the upstream 30-second poll exhausts it: the
   # positions then expire and every "flying now" question finds nothing. These are
   # docker-compose's values, chosen for the same reason; a position can be 35 minutes old.
@@ -94,38 +119,7 @@ patches:
       - op: add
         path: /data/MAX_BACKOFF
         value: "1800"
-  # The manifests rely on a default StorageClass; this names the cluster's own.
-  - target:
-      kind: PersistentVolumeClaim
-      name: postgres-pvc
-    patch: |-
-      - op: add
-        path: /spec/storageClassName
-        value: vsan-default-storage-policy
-  # A fresh volume's root holds lost+found, which initdb refuses, so the data goes one level
-  # down. The first start's seed import needs more memory and CPU than the manifests allow, and
-  # runs against a server listening only on its socket: readiness over TCP keeps Postgres
-  # unready until the real server is up.
-  - target:
-      kind: Deployment
-      name: postgres
-    patch: |-
-      - op: add
-        path: /spec/template/spec/containers/0/env
-        value:
-          - name: PGDATA
-            value: /var/lib/postgresql/data/pgdata
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/limits/memory
-        value: 2Gi
-      - op: replace
-        path: /spec/template/spec/containers/0/resources/limits/cpu
-        value: "2"
-      - op: replace
-        path: /spec/template/spec/containers/0/readinessProbe/exec/command
-        value: [pg_isready, -h, 127.0.0.1, -U, postgres]
-  # The postgres and valkey images start as root, which the "restricted" Pod Security Standard
-  # refuses; the buildpack-built images and the llm pod run as a non-root user and would pass it.
+  # The valkey image starts as root, which the "restricted" Pod Security Standard refuses.
   - target:
       kind: Namespace
     patch: |-

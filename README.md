@@ -35,7 +35,15 @@ docker-compose up --build
 # Access the application
 # Frontend: http://localhost:8080
 # API Docs: http://localhost:8000/docs
+# Language model (OpenAI API): http://localhost:8088/v1
 ```
+
+The first start also fetches the 2.5 GB model behind the AI features into the `llm_models`
+volume; later starts reuse it. The model runs on processor cores and needs about 5 GB of the
+Docker VM's memory.
+
+For the AI features on VKS, with images built by Cloud Native Buildpacks, see
+[ai/README.md](ai/README.md).
 
 ### Kubernetes Deployment
 

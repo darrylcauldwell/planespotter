@@ -1,0 +1,132 @@
+# The language model behind Ask Planespotter and the aircraft descriptions: llama.cpp's server
+# on processor cores, answering the OpenAI API at http://llm:8080/v1.
+#
+# A StatefulSet rather than a Deployment so that each replica keeps its own copy of the model
+# on its own volume: scaling out fetches the file once per new replica, and a restart fetches
+# nothing.
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm
+  labels:
+    app: llm
+spec:
+  selector:
+    app: llm
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: llm
+  labels:
+    app: llm
+spec:
+  serviceName: llm
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llm
+  template:
+    metadata:
+      labels:
+        app: llm
+    spec:
+      # The image starts as root; nothing it does needs root. fsGroup lets the fetch write to
+      # the volume as this user.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: fetch-model
+          image: ghcr.io/ggml-org/llama.cpp:server-b12352
+          command: ["sh", "/scripts/fetch-model.sh"]
+          env:
+            - name: MODEL_REPOSITORY
+              value: ai/qwen3
+            - name: MODEL_DIGEST
+              value: sha256:4bbe1f2f8ebe69fad3be8e15d69f220b06448a9dd26f82d7d81cce88ebfc39fd
+            - name: MODEL_DIR
+              value: /models
+          volumeMounts:
+            - name: models
+              mountPath: /models
+            - name: scripts
+              mountPath: /scripts
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      containers:
+        - name: llama-server
+          image: ghcr.io/ggml-org/llama.cpp:server-b12352
+          args: ["-m", "/models/model.gguf", "--alias", "qwen3-4b", "--reasoning", "off",
+                 "--ctx-size", "8192", "--parallel", "2", "--metrics"]
+          env:
+            # Inference is bound by processor cores, so llama-server runs one thread per core
+            # the pod requests. Left to itself it would count the node's cores instead.
+            - name: LLAMA_ARG_THREADS
+              valueFrom:
+                resourceFieldRef:
+                  resource: requests.cpu
+                  divisor: "1"
+          ports:
+            - name: http
+              containerPort: 8080
+          # Four cores rather than the cluster's usual two: speed scales with cores. Nodes of the
+          # best-effort-medium class (2 vCPU) cannot hold this pod, so the cluster needs a node
+          # pool of a larger class. Memory holds the 2.5 GB model plus its context cache, with
+          # no CPU limit, which would throttle the threads mid-answer.
+          resources:
+            requests:
+              cpu: "4"
+              memory: 6Gi
+            limits:
+              memory: 6Gi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 30
+            failureThreshold: 3
+          volumeMounts:
+            - name: models
+              mountPath: /models
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: scripts
+          configMap:
+            name: llm-fetch-model
+  volumeClaimTemplates:
+    - metadata:
+        name: models
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: vsan-default-storage-policy
+        resources:
+          requests:
+            storage: 5Gi

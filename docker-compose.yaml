@@ -36,11 +36,41 @@ services:
       REDIS_HOST: valkey
       REDIS_PORT: 6379
       LOG_LEVEL: INFO
+      LLM_BASE_URL: http://llm:8080/v1
     depends_on:
       postgres:
         condition: service_healthy
       valkey:
         condition: service_healthy
+
+  # The language model behind Ask Planespotter and the aircraft descriptions. llm-model fetches
+  # its file once into the llm_models volume; ai/fetch-model.sh says why llama-server does not.
+  llm-model:
+    image: ghcr.io/ggml-org/llama.cpp:server-b12352
+    entrypoint: ["sh", "/scripts/fetch-model.sh"]
+    environment:
+      MODEL_REPOSITORY: ai/qwen3
+      MODEL_DIGEST: sha256:4bbe1f2f8ebe69fad3be8e15d69f220b06448a9dd26f82d7d81cce88ebfc39fd
+      MODEL_DIR: /models
+    volumes:
+      - llm_models:/models
+      - ./ai/fetch-model.sh:/scripts/fetch-model.sh:ro
+
+  # Four threads, not one per core the Docker VM offers: on a laptop the extra threads land on
+  # efficiency cores and slow every token (Apple M4: 16.5 tokens/s with 4 threads, 3.5 with 10).
+  llm:
+    image: ghcr.io/ggml-org/llama.cpp:server-b12352
+    command: ["-m", "/models/model.gguf", "--alias", "qwen3-4b", "--reasoning", "off",
+              "--ctx-size", "8192", "--parallel", "2", "--metrics", "--threads", "4"]
+    user: "1000:1000"
+    read_only: true
+    ports:
+      - "8088:8080"
+    volumes:
+      - llm_models:/models:ro
+    depends_on:
+      llm-model:
+        condition: service_completed_successfully
 
   frontend:
     build: ./frontend
@@ -158,6 +188,7 @@ services:
 
 volumes:
   postgres_data:
+  llm_models:
   prometheus_data:
   grafana_data:
   loki_data:

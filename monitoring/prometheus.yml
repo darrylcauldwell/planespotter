@@ -26,6 +26,10 @@ scrape_configs:
     static_configs:
       - targets: ['adsb-sync:9090']
     metrics_path: /metrics
+  - job_name: 'planespotter-llm'
+    static_configs:
+      - targets: ['llm:8080']
+    metrics_path: /metrics
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']

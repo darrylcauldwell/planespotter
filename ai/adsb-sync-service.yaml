@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: adsb-sync
+  labels:
+    app: adsb-sync
+spec:
+  selector:
+    app: adsb-sync
+  ports:
+    - name: metrics
+      port: 9090
+      targetPort: 9090

@@ -62,9 +62,10 @@ class AircraftService:
         count_query = select(func.count()).select_from(query.subquery())
         total = await self.db.scalar(count_query)
 
-        # Apply pagination
+        # Apply pagination. Without an order Postgres may return rows in a different order for
+        # each page, so pages could repeat or skip aircraft.
         offset = (page - 1) * per_page
-        query = query.offset(offset).limit(per_page)
+        query = query.order_by(AircraftMetadata.icao24).offset(offset).limit(per_page)
 
         result = await self.db.execute(query)
         return result.scalars().all(), total or 0

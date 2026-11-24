@@ -30,6 +30,23 @@ class TestAircraftServiceSearch:
         assert mock_db_session.execute.called
 
     @pytest.mark.asyncio
+    async def test_search_pages_in_a_stable_order(self, mock_db_session, sample_aircraft_list):
+        """Test results are ordered, so consecutive pages neither repeat nor skip aircraft."""
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = sample_aircraft_list
+        mock_result.scalars.return_value = mock_scalars
+
+        mock_db_session.execute = AsyncMock(return_value=mock_result)
+        mock_db_session.scalar = AsyncMock(return_value=2)
+
+        service = AircraftService(mock_db_session)
+        await service.search(manufacturer="Boeing", page=3)
+
+        sql = str(mock_db_session.execute.call_args.args[0].compile(dialect=postgresql.dialect()))
+        assert "ORDER BY aircraft_metadata.icao24" in sql
+
+    @pytest.mark.asyncio
     @pytest.mark.parametrize("airborne, operator", [(True, "= ANY ("), (False, "!= ALL (")])
     async def test_search_by_airborne_status(self, mock_db_session, sample_aircraft, airborne, operator):
         """Test the status filter is one array comparison against every tracked aircraft."""
